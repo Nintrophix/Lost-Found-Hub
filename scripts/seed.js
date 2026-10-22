@@ -17,7 +17,8 @@ const sharp = require('sharp');
 
 const config = require('../src/config/env');
 const { connectDB, disconnectDB } = require('../src/config/db');
-const { UPLOAD_DIR } = require('../src/config/multer');
+// Demo images are committed with the code (public/img/seed) so they also exist on hosts like Render.
+const SEED_DIR = path.join(__dirname, '..', 'public', 'img', 'seed');
 const { PATHS } = require('../src/utils/icons');
 const User = require('../src/models/User');
 const Item = require('../src/models/Item');
@@ -218,14 +219,15 @@ async function renderItemImage(item, variant) {
     '</svg>';
 
   const filename = `seed-${item.ref}-${variant + 1}.webp`;
-  await sharp(Buffer.from(svg)).webp({ quality: 82 }).toFile(path.join(UPLOAD_DIR, filename));
-  return `/uploads/${filename}`;
+  await sharp(Buffer.from(svg)).webp({ quality: 82 }).toFile(path.join(SEED_DIR, filename));
+  return `/img/seed/${filename}`;
 }
 
 function removeOldSeedImages() {
-  fs.readdirSync(UPLOAD_DIR)
+  fs.mkdirSync(SEED_DIR, { recursive: true });
+  fs.readdirSync(SEED_DIR)
     .filter((name) => name.startsWith('seed-'))
-    .forEach((name) => fs.unlinkSync(path.join(UPLOAD_DIR, name)));
+    .forEach((name) => fs.unlinkSync(path.join(SEED_DIR, name)));
 }
 
 async function addMessages(conversation, messages) {

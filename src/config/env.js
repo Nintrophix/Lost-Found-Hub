@@ -10,7 +10,8 @@ require('dotenv').config();
 const isProd = process.env.NODE_ENV === 'production';
 
 function readSiteUrl() {
-  const raw = (process.env.SITE_URL || '').trim();
+  // Render sets RENDER_EXTERNAL_URL (https://<service>.onrender.com); SITE_URL wins once a custom domain is set.
+  const raw = (process.env.SITE_URL || process.env.RENDER_EXTERNAL_URL || '').trim();
   if (!raw) return null;
   try {
     const url = new URL(raw);

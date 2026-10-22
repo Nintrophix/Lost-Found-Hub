@@ -92,7 +92,7 @@ To see real-time chat, log in as Ava in one browser and as Jordan in a private w
 | `SESSION_SECRET` | development-only value | Signs the session cookie. Required in production, at least 32 characters |
 | `NODE_ENV` | `development` | `production` enables secure cookies, HSTS, proxy trust and the canonical-domain redirect |
 | `MAX_UPLOAD_MB` | `5` | Maximum size of each uploaded image |
-| `SITE_URL` | request host | Public origin, for example `https://lostandfound.example.edu`. Used for canonical tags, sitemap, robots.txt and llms.txt. Required in production |
+| `SITE_URL` | request host | Public origin, for example `https://lostandfound.example.edu`. Used for canonical tags, sitemap, robots.txt and llms.txt. Required in production, except on Render, where the `onrender.com` address is used until you set it |
 | `SITE_CONTACT_EMAIL` | empty | Shown on the privacy policy page for data requests |
 
 Generate a session secret with:
@@ -100,6 +100,32 @@ Generate a session secret with:
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
+
+## Deploying on Render
+
+The repository includes a Render Blueprint (`render.yaml`) that creates the web service for you.
+
+1. **Database:** create a free cluster on [MongoDB Atlas](https://www.mongodb.com/atlas). Add a database user, and under Network Access allow `0.0.0.0/0` (Render's free services have no fixed IP address). Copy the connection string and add a database name before the `?`, for example `mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/campus-lost-found?retryWrites=true&w=majority`.
+2. **Demo data (optional):** from your computer, run the seed script against Atlas.
+
+   PowerShell:
+
+   ```powershell
+   $env:MONGODB_URI="<your Atlas connection string>"; npm run seed
+   ```
+
+   bash:
+
+   ```bash
+   MONGODB_URI="<your Atlas connection string>" npm run seed
+   ```
+
+3. **Service:** in the [Render dashboard](https://dashboard.render.com) choose **New > Blueprint**, connect this GitHub repository and apply. Paste the Atlas string when asked for `MONGODB_URI` and leave `SITE_URL` empty for now. `SESSION_SECRET` is generated for you.
+4. **Open it:** the site is live at `https://<service-name>.onrender.com` once the first deploy finishes.
+
+The Blueprint uses Render's free plan and deploys the `style` branch. On the free plan the service sleeps after 15 minutes without visits (the next visit takes about a minute to wake it), and the disk is temporary: photos people upload are deleted whenever the service restarts or redeploys. Demo images are part of the code and are not affected. For lasting uploads, move to the Starter plan and attach a disk.
+
+To use your own domain, add it under the service's **Settings > Custom Domains**, create the DNS record Render shows you, then set `SITE_URL` to `https://your-domain`.
 
 ## Deploying on a custom domain
 
