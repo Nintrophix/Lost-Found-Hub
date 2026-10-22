@@ -645,31 +645,47 @@ body::before {
 .horizon-content { display: grid; width: min(720px, 90vw); place-items: center; }
 /*
  * Loader sequence (about 2.9s, then theme.js lifts the screen):
- *   0.0s  string drops, logo tile pops in      0.35s tag outline draws itself
- *   0.95s punch hole draws, tag starts swinging  1.0s  name rises letter by letter
- *   1.9s  horizon line opens                    2.1s  status line fades in
+ *   0.0s  logo tile pops in                     0.2s  orbit rings draw themselves
+ *   0.35s tag outline draws on the tile          0.9s  arms and planets appear and the orrery turns
+ *   1.0s  name rises letter by letter            1.9s  horizon line opens, 2.1s status line fades in
  */
-.loader-tag { position: relative; width: 84px; height: 112px; margin-bottom: 18px; }
-.loader-string {
-  position: absolute; left: 50%; top: 0; width: 2px; height: 28px; margin-left: -1px; border-radius: 1px; background: var(--line-strong);
-  transform-origin: top; animation: string-drop .45s var(--ease-out) both;
+.orrery { position: relative; display: block; width: 264px; height: 264px; margin-bottom: 18px; }
+.orrery-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.orrery-ring {
+  stroke: var(--line-strong); stroke-width: 1.1; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .85;
+  animation: draw 1s var(--ease-out) .2s forwards;
 }
-.loader-swing {
-  position: absolute; left: 0; right: 0; top: 22px; transform-origin: 50% 5px;
-  animation: tag-swing 2.4s ease-in-out 1.05s infinite;
-}
+.orrery-ring:nth-child(2) { animation-delay: .32s; }
+.orrery-ring:nth-child(3) { animation-delay: .44s; }
+.orrery-ticks line { stroke: var(--line-strong); stroke-width: 1; stroke-linecap: round; }
+.orrery-ticks { opacity: 0; animation: fade-in .6s ease-out .7s forwards; }
+.orrery-arm { stroke: color-mix(in srgb, var(--lost-accent) 60%, var(--line-strong)); stroke-width: 1.3; stroke-linecap: round; opacity: .8; }
+.planet { stroke: var(--bg); stroke-width: 2; }
+.planet-brand { fill: var(--link); }
+.planet-lost { fill: var(--lost-accent); }
+.planet-found { fill: var(--found-accent); }
+.moon { fill: var(--subtle); }
+.moon-ring { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 3; }
+/* Planets ride rotating groups centered on the sun (the logo); the outer planet carries a moon. */
+.orbit, .moon-orbit { transform-box: view-box; }
+.orbit { transform-origin: 120px 120px; opacity: 0; animation: planet-in .6s var(--ease-out) .9s forwards, orbit linear .9s infinite; }
+.orbit-1 { animation-duration: .6s, 4.2s; }
+.orbit-2 { animation-duration: .6s, 7s; animation-direction: normal, reverse; }
+.orbit-3 { animation-duration: .6s, 11s; }
+.moon-orbit { transform-origin: 120px 10px; animation: orbit 1.6s linear infinite; }
+@keyframes orbit { to { transform: rotate(360deg); } }
+@keyframes planet-in { to { opacity: 1; } }
 .loader-mark {
-  width: 84px; height: 84px; border-radius: 14px; margin: 0 auto; display: flex; box-shadow: var(--shadow-lg);
-  animation: mark-in .7s var(--ease-out) .1s both;
+  position: absolute; left: 50%; top: 50%; width: 68px; height: 68px; margin: -34px 0 0 -34px;
+  border-radius: 12px; display: flex; box-shadow: var(--shadow-lg); transform-origin: 50% 50%;
+  animation: mark-in .7s var(--ease-out) .05s both;
 }
-.loader-logo { width: 48px; height: 48px; }
+@keyframes mark-in { from { opacity: 0; transform: scale(.6) rotate(-14deg); } to { opacity: 1; transform: none; } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.loader-logo { width: 38px; height: 38px; }
 .loader-logo path, .loader-logo circle { stroke-dasharray: 1; stroke-dashoffset: 1; }
 .loader-logo path { animation: draw .8s var(--ease-out) .35s forwards; }
 .loader-logo .loader-logo-hole { animation: draw .35s var(--ease-out) .95s forwards; }
-@keyframes string-drop { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@keyframes mark-in { from { opacity: 0; transform: translateY(-10px) scale(.6) rotate(-14deg); } to { opacity: 1; transform: none; } }
-@keyframes draw { to { stroke-dashoffset: 0; } }
-@keyframes tag-swing { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(8deg); } 75% { transform: rotate(-8deg); } }
 .loader-name {
   margin-bottom: 26px; text-align: center; color: var(--ink);
   font-family: var(--font-display); font-size: clamp(1.6rem, 1.1rem + 2.4vw, 2.5rem); font-weight: 850; font-stretch: 108%;
@@ -877,8 +893,10 @@ body::before {
   .btn::before { display: none; }
   .btn .icon, .theme-toggle .icon, a.panel .icon { transition: none; transform: none !important; }
   .results-grid-enter > li, .msg.is-new, .flash, .toast, .preview-grid figure { animation-name: fade-in; animation-duration: .2s; }
-  .loader-swing, .horizon-atmosphere, .horizon::before, .horizon::after, .horizon-pearl,
-  .loader-string, .loader-mark, .loader-ch, .page-loader .horizon, .page-loader .horizon-label { animation: none; }
+  .horizon-atmosphere, .horizon::before, .horizon::after, .horizon-pearl, .orbit, .moon-orbit, .orrery-ticks,
+  .loader-mark, .loader-ch, .page-loader .horizon, .page-loader .horizon-label { animation: none; }
+  .orrery-ring { animation: none; stroke-dashoffset: 0; }
+  .orbit, .orrery-ticks { opacity: 1; }
   .loader-logo path, .loader-logo circle { animation: none; stroke-dashoffset: 0; }
   .horizon-light { display: none; }
   .nav-progress.is-active { animation: none; transform: scaleX(.6); }

@@ -66,19 +66,41 @@
 </head>
 <body class="min-h-screen flex flex-col">
   <div class="topo-bg" data-topography aria-hidden="true"><canvas></canvas></div>
-  <%# First-visit loader: the tag draws itself and swings, then the name rises in letter by letter (see app.css and theme.js). %>
+  <%# First-visit loader: an orrery turns around the logo while the tag draws itself, then the name rises in letter by letter (see app.css and theme.js). %>
   <div class="page-loader" aria-hidden="true">
     <span class="horizon-atmosphere"></span>
     <span class="horizon-content">
-      <span class="loader-tag">
-        <span class="loader-string"></span>
-        <span class="loader-swing">
-          <span class="brand-mark loader-mark">
-            <svg class="loader-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-              <path pathLength="1" d="M3.5 12.6V4.5a1 1 0 0 1 1-1h8.1l8 8a1 1 0 0 1 0 1.4l-7.2 7.2a1 1 0 0 1-1.4 0z"/>
-              <circle class="loader-logo-hole" pathLength="1" cx="8.5" cy="8.5" r="1.5"/>
-            </svg>
-          </span>
+      <span class="orrery">
+        <svg class="orrery-svg" viewBox="-12 -12 264 264" focusable="false">
+          <g class="orrery-rings" fill="none">
+            <circle class="orrery-ring" pathLength="1" cx="120" cy="120" r="58"/>
+            <circle class="orrery-ring" pathLength="1" cx="120" cy="120" r="84"/>
+            <circle class="orrery-ring" pathLength="1" cx="120" cy="120" r="110"/>
+          </g>
+          <g class="orrery-ticks">
+            <% for (let t = 0; t < 24; t += 1) { %><line x1="120" y1="<%= t % 6 === 0 ? -4 : -1 %>" x2="120" y2="4" transform="rotate(<%= t * 15 %> 120 120)"/><% } %>
+          </g>
+          <%# Each planet rides an arm from the center, like the rods of a mechanical orrery. %>
+          <g class="orbit orbit-1"><g transform="rotate(35 120 120)">
+            <line class="orrery-arm" x1="120" y1="120" x2="120" y2="62"/>
+            <circle class="planet planet-brand" cx="120" cy="62" r="6.5"/>
+          </g></g>
+          <g class="orbit orbit-2"><g transform="rotate(165 120 120)">
+            <line class="orrery-arm" x1="120" y1="120" x2="120" y2="36"/>
+            <circle class="planet planet-lost" cx="120" cy="36" r="8"/>
+          </g></g>
+          <g class="orbit orbit-3"><g transform="rotate(255 120 120)">
+            <line class="orrery-arm" x1="120" y1="120" x2="120" y2="10"/>
+            <circle class="planet planet-found" cx="120" cy="10" r="7"/>
+            <circle class="moon-ring" cx="120" cy="10" r="13" fill="none"/>
+            <g class="moon-orbit"><circle class="moon" cx="120" cy="-3" r="2.6"/></g>
+          </g></g>
+        </svg>
+        <span class="brand-mark loader-mark">
+          <svg class="loader-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path pathLength="1" d="M3.5 12.6V4.5a1 1 0 0 1 1-1h8.1l8 8a1 1 0 0 1 0 1.4l-7.2 7.2a1 1 0 0 1-1.4 0z"/>
+            <circle class="loader-logo-hole" pathLength="1" cx="8.5" cy="8.5" r="1.5"/>
+          </svg>
         </span>
       </span>
       <% let charIndex = 0; const words = siteName.split(' '); %>
