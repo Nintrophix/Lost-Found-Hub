@@ -1,0 +1,45 @@
+<footer class="site-footer">
+  <div class="container py-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+    <div>
+      <p class="font-bold text-white mb-2"><%= siteName %></p>
+      <p class="text-sm">
+        Found something valuable like a wallet, ID or laptop and cannot reach the owner?
+        Hand it to your campus security office and note that in your report.
+      </p>
+    </div>
+    <div>
+      <p class="footer-title mb-3">Browse</p>
+      <ul class="space-y-2 text-sm">
+        <li><a href="/items">All items</a></li>
+        <li><a href="/items?type=lost">Lost items</a></li>
+        <li><a href="/items?type=found">Found items</a></li>
+        <li><a href="/items?status=resolved">Returned items</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="footer-title mb-3">Your account</p>
+      <ul class="space-y-2 text-sm">
+        <li><a href="/items/new">Report an item</a></li>
+        <% if (currentUser) { %>
+          <li><a href="/dashboard">Dashboard</a></li>
+          <li><a href="/claims">Claims</a></li>
+          <li><a href="/chat">Messages</a></li>
+        <% } else { %>
+          <li><a href="/login">Log in</a></li>
+          <li><a href="/register">Create an account</a></li>
+        <% } %>
+      </ul>
+    </div>
+    <div>
+      <p class="footer-title mb-3">About this site</p>
+      <ul class="space-y-2 text-sm">
+        <li><a href="/privacy">Privacy policy</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
+        <li><a href="/llms.txt">llms.txt</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="border-t border-gray-700">
+    <p class="container py-4 text-sm">&copy; <%= year %> <%= siteName %></p>
+  </div>
+</footer>

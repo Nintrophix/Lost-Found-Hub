@@ -1,0 +1,108 @@
+<%
+  const start = result.total ? (result.page - 1) * result.limit + 1 : 0;
+  const end = Math.min(result.page * result.limit, result.total);
+  const summary = result.total
+    ? `Showing ${start} to ${end} of ${result.total} ${result.total === 1 ? 'item' : 'items'}`
+    : 'No items match these filters';
+%>
+<div class="container pt-4 pb-10">
+  <div class="flex flex-wrap items-end justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-3xl font-extrabold">Lost and found items</h1>
+      <p class="mt-1 text-gray-700">Search by what it is and where it was. Results update as you type.</p>
+    </div>
+    <a class="btn btn-primary" href="/items/new"><%- icon('plus', 'icon-sm') %>Report an item</a>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-4">
+    <aside class="lg:col-span-1">
+      <form id="filters" class="panel panel-pad" action="/items" method="get" role="search" aria-label="Filter items">
+        <div class="field">
+          <label class="label" for="q">Keywords</label>
+          <input class="input" id="q" type="search" name="q" value="<%= filters.q %>" maxlength="200"
+                 placeholder="Item, color or place" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label class="label" for="type">Lost or found</label>
+          <select class="select" id="type" name="type">
+            <option value="">Lost and found</option>
+            <option value="lost" <%= filters.type === 'lost' ? 'selected' : '' %>>Lost items</option>
+            <option value="found" <%= filters.type === 'found' ? 'selected' : '' %>>Found items</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="label" for="category">Category</label>
+          <select class="select" id="category" name="category">
+            <option value="">All categories</option>
+            <% categories.forEach((c) => { %>
+              <option value="<%= c %>" <%= filters.category === c ? 'selected' : '' %>><%= categoryLabels[c] %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="label" for="status">Status</label>
+          <select class="select" id="status" name="status">
+            <option value="">Any status</option>
+            <option value="open" <%= filters.status === 'open' ? 'selected' : '' %>>Open</option>
+            <option value="claimed" <%= filters.status === 'claimed' ? 'selected' : '' %>>Claimed</option>
+            <option value="resolved" <%= filters.status === 'resolved' ? 'selected' : '' %>>Returned</option>
+          </select>
+        </div>
+
+        <fieldset class="field">
+          <legend class="label">Date lost or found</legend>
+          <div class="grid grid-cols-2 lg:grid-cols-1 gap-2">
+            <div>
+              <label class="hint mt-0 mb-1" for="from">From</label>
+              <input class="input" id="from" type="date" name="from" value="<%= filters.from %>">
+            </div>
+            <div>
+              <label class="hint mt-0 mb-1" for="to">To</label>
+              <input class="input" id="to" type="date" name="to" value="<%= filters.to %>">
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="flex flex-wrap gap-2">
+          <button class="btn btn-primary" type="submit">Apply filters</button>
+          <a class="btn btn-secondary" href="/items" id="clear-filters">Clear</a>
+        </div>
+      </form>
+    </aside>
+
+    <section class="lg:col-span-3" aria-labelledby="results-summary">
+      <p id="results-summary" class="font-semibold mb-4" role="status" aria-live="polite"><%= summary %></p>
+      <p id="results-error" class="flash flash-error" role="alert" hidden></p>
+
+      <div id="results" class="results" aria-busy="false">
+        <ul id="results-grid" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" <%= result.items.length ? '' : 'hidden' %>>
+          <% result.items.forEach((item) => { %>
+            <li><%- include('../../partials/itemCard', { item, headingTag: 'h2' }) %></li>
+          <% }) %>
+        </ul>
+
+        <div id="results-empty" class="empty-state" <%= result.items.length ? 'hidden' : '' %>>
+          <p class="font-semibold">Nothing matches yet.</p>
+          <p class="mt-1 text-gray-700">
+            Try fewer keywords or a wider date range. If you lost something, <a class="prose-link" href="/items/new?type=lost">report it</a>
+            so finders can contact you.
+          </p>
+        </div>
+
+        <template id="icon-templates">
+          <span data-icon="pin"><%- icon('pin', 'icon-sm') %></span>
+          <span data-icon="calendar"><%- icon('calendar', 'icon-sm') %></span>
+          <span data-icon="tag"><%- icon('tag', 'icon-sm') %></span>
+          <% categories.forEach((c) => { %><span data-icon="<%= c %>"><%- icon(c, 'icon-lg') %></span><% }) %>
+        </template>
+
+        <div id="results-pagination">
+          <%- include('../../partials/pagination', { page: result.page, totalPages: result.totalPages, pageUrl }) %>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

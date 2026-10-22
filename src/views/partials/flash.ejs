@@ -1,0 +1,12 @@
+<% const messages = takeFlash(); %>
+<% if (messages.length) { %>
+  <div class="container pt-4">
+    <% messages.forEach((m) => { %>
+      <div class="flash flash-<%= ['success', 'error', 'info'].includes(m.type) ? m.type : 'info' %>"
+           role="<%= m.type === 'error' ? 'alert' : 'status' %>">
+        <%- icon(m.type === 'error' ? 'shield' : 'check') %>
+        <p><%= m.message %></p>
+      </div>
+    <% }) %>
+  </div>
+<% } %>

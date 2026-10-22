@@ -1,0 +1,16 @@
+<div class="container-narrow pt-4 pb-10">
+  <h1 class="text-3xl font-extrabold">Report a lost or found item</h1>
+  <p class="mt-2 text-gray-700">
+    Specific details get items home faster. Everyone can see this listing; only your first name is shown.
+  </p>
+
+  <form class="panel panel-pad mt-6" action="/items" method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+    <%- include('../../partials/itemFormFields', { values, errors }) %>
+    <%- include('../../partials/imageInput', { errors, maxImages, existingCount: 0 }) %>
+    <div class="flex flex-wrap gap-3 mt-2">
+      <button class="btn btn-primary" type="submit">Publish report</button>
+      <a class="btn btn-secondary" href="/items">Cancel</a>
+    </div>
+  </form>
+</div>

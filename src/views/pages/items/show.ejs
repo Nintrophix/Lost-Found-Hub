@@ -1,0 +1,127 @@
+<%
+  const typeLabel = item.type === 'lost' ? 'Lost' : 'Found';
+  const n = item.images.length;
+%>
+<div class="container pt-4 pb-10">
+  <div class="grid gap-8 lg:grid-cols-5">
+    <div class="lg:col-span-3">
+      <% if (n) { %>
+        <div class="gallery" data-gallery>
+          <div class="gallery-main">
+            <img src="<%= item.images[0] %>" alt="<%= item.title %>, image 1 of <%= n %>" width="800" height="600" data-gallery-main>
+          </div>
+          <% if (n > 1) { %>
+            <ul class="gallery-thumbs" aria-label="More images">
+              <% item.images.forEach((src, i) => { %>
+                <li>
+                  <a class="gallery-thumb" href="<%= src %>" data-gallery-thumb data-alt="<%= item.title %>, image <%= i + 1 %> of <%= n %>"
+                     <%= i === 0 ? 'aria-current=true' : '' %>>
+                    <img src="<%= src %>" alt="Show image <%= i + 1 %> of <%= n %>" width="72" height="72" loading="lazy">
+                  </a>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="gallery-main thumb-empty">
+          <%- icon(item.category, 'icon-lg') %>
+          <span>The reporter has not added a photo.</span>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="lg:col-span-2">
+      <div class="badges mb-3">
+        <span class="badge badge-<%= item.type %>"><%= typeLabel %></span>
+        <span class="badge badge-<%= item.status %>"><%= statusLabels[item.status] %></span>
+      </div>
+      <h1 class="text-3xl font-extrabold"><%= item.title %></h1>
+
+      <dl class="detail-list mt-5">
+        <dt>Category</dt>
+        <dd><a href="/items?category=<%= item.category %>"><%= categoryLabels[item.category] %></a></dd>
+        <% if (item.color) { %>
+          <dt>Color</dt>
+          <dd><%= item.color %></dd>
+        <% } %>
+        <dt><%= typeLabel %> at</dt>
+        <dd><%= item.location %></dd>
+        <dt><%= typeLabel %> on</dt>
+        <dd><time datetime="<%= fmt.toDateInput(item.dateLostOrFound) %>"><%= fmt.formatDate(item.dateLostOrFound) %></time></dd>
+        <dt>Reported by</dt>
+        <dd><%= reporterFirstName %></dd>
+        <dt>Posted</dt>
+        <dd><time datetime="<%= new Date(item.createdAt).toISOString() %>"><%= fmt.formatDate(item.createdAt) %></time></dd>
+      </dl>
+
+      <h2 class="text-lg font-bold mt-6 mb-2">Description</h2>
+      <p class="whitespace-pre-line"><%= item.description %></p>
+
+      <div class="panel panel-pad mt-6">
+        <% if (isReporter) { %>
+          <p class="font-semibold">You reported this item.</p>
+          <% if (pendingClaimCount) { %>
+            <p class="mt-1"><a class="prose-link" href="/dashboard"><%= pendingClaimCount %> pending <%= pendingClaimCount === 1 ? 'claim' : 'claims' %></a> waiting for your review.</p>
+          <% } %>
+        <% } else if (item.status === 'resolved') { %>
+          <p class="font-semibold">This item was returned to its owner.</p>
+          <p class="mt-1 text-gray-700">Looking for something similar? <a class="prose-link" href="/items?category=<%= item.category %>">Browse <%= categoryLabels[item.category].toLowerCase() %></a>.</p>
+        <% } else if (!currentUser) { %>
+          <p class="font-semibold"><%= item.type === 'found' ? 'Is this yours?' : 'Have you seen this?' %></p>
+          <p class="mt-1 text-gray-700"><a class="prose-link" href="/login">Log in</a> or <a class="prose-link" href="/register">create an account</a> to <%= item.type === 'found' ? 'claim it' : 'tell the owner you found it' %> or message <%= reporterFirstName %>.</p>
+        <% } else { %>
+          <div class="flex flex-wrap gap-3">
+            <% if (item.type === 'found') { %>
+              <% if (hasPendingClaim) { %>
+                <p class="font-semibold w-full">Your claim is waiting for <%= reporterFirstName %> to review it.</p>
+              <% } else if (item.status === 'open') { %>
+                <a class="btn btn-found" href="/items/<%= item._id %>/claim"><%- icon('check') %>Claim this item</a>
+              <% } %>
+            <% } else { %>
+              <a class="btn btn-lost" href="/items/<%= item._id %>/found"><%- icon('check') %>I found this</a>
+            <% } %>
+            <form action="/chat/start" method="post">
+              <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+              <input type="hidden" name="itemId" value="<%= item._id %>">
+              <button class="btn btn-secondary" type="submit"><%- icon('chat') %>Message <%= reporterFirstName %></button>
+            </form>
+          </div>
+          <% if (item.type === 'found' && item.status === 'claimed' && !hasPendingClaim) { %>
+            <p class="mt-3 text-gray-700">A claim on this item was approved and the hand-off is being arranged.</p>
+          <% } %>
+        <% } %>
+      </div>
+
+      <% if (canManage) { %>
+        <div class="panel panel-pad mt-4">
+          <h2 class="text-lg font-bold mb-3">Manage this listing</h2>
+          <div class="flex flex-wrap gap-2">
+            <a class="btn btn-secondary btn-sm" href="/items/<%= item._id %>/edit">Edit</a>
+            <% if (item.status !== 'resolved') { %>
+              <form action="/items/<%= item._id %>/resolve" method="post">
+                <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+                <button class="btn btn-secondary btn-sm" type="submit">Mark as returned</button>
+              </form>
+            <% } else { %>
+              <form action="/items/<%= item._id %>/reopen" method="post">
+                <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+                <button class="btn btn-secondary btn-sm" type="submit">Reopen listing</button>
+              </form>
+            <% } %>
+          </div>
+          <details class="mt-4">
+            <summary class="font-semibold cursor-pointer">Delete this listing</summary>
+            <p class="mt-2 text-sm text-gray-700">This permanently removes the listing, its photos, its claims and every conversation about it.</p>
+            <form class="mt-2" action="/items/<%= item._id %>/delete" method="post">
+              <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+              <button class="btn btn-danger btn-sm" type="submit">Yes, delete permanently</button>
+            </form>
+          </details>
+        </div>
+      <% } %>
+
+      <p class="mt-6"><a class="inline-flex items-center gap-1 font-semibold" href="/items?type=<%= item.type %>"><%- icon('arrowLeft', 'icon-sm') %>More <%= typeLabel.toLowerCase() %> items</a></p>
+    </div>
+  </div>
+</div>

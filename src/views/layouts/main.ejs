@@ -1,0 +1,72 @@
+<%
+  // Page metadata comes from each controller's render() call.
+  const pageTitle = locals.title
+    ? `${locals.title} | ${siteName}`
+    : `${siteName}: report, search and return lost items on campus`;
+  const canonicalUrl = siteOrigin + (locals.canonicalPath || currentPath);
+  const crumbs = locals.breadcrumbs || [];
+  const structured = (locals.jsonLd || []).slice();
+  if (crumbs.length) {
+    structured.push({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: crumbs.map((c, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: c.name,
+        item: c.url ? siteOrigin + c.url : canonicalUrl,
+      })),
+    });
+  }
+  const scripts = locals.pageScripts || [];
+%><!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= pageTitle %></title>
+  <% if (locals.description) { %><meta name="description" content="<%= description %>"><% } %>
+  <% if (!locals.isErrorPage) { %><link rel="canonical" href="<%= canonicalUrl %>"><% } %>
+  <% if (locals.noindex) { %><meta name="robots" content="noindex"><% } %>
+  <meta property="og:site_name" content="<%= siteName %>">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="<%= locals.title || siteName %>">
+  <% if (locals.description) { %><meta property="og:description" content="<%= description %>"><% } %>
+  <meta property="og:url" content="<%= canonicalUrl %>">
+  <% if (locals.ogImage) { %><meta property="og:image" content="<%= ogImage %>"><% } %>
+  <meta name="twitter:card" content="<%= locals.ogImage ? 'summary_large_image' : 'summary' %>">
+  <meta name="theme-color" content="#1d4e89">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+        integrity="sha384-HtMZLkYo+pR5/u7zCzXxMJP6QoNnQJt1qkHM0EaOPvGDIzaVZbmYr/TlvUZ/sKAg" crossorigin="anonymous">
+  <link rel="stylesheet" href="/css/app.css">
+  <% if (currentUser) { %><meta name="csrf-token" content="<%= csrfToken() %>"><% } %>
+  <% structured.forEach((data) => { %>
+  <script type="application/ld+json" nonce="<%= cspNonce %>"><%- JSON.stringify(data).replace(/</g, '\\u003c') %></script>
+  <% }) %>
+</head>
+<body class="min-h-screen flex flex-col">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <%- include('../partials/header') %>
+
+  <main id="main" class="flex-1" tabindex="-1">
+    <% if (crumbs.length) { %>
+      <div class="container pt-5"><%- include('../partials/breadcrumbs', { crumbs }) %></div>
+    <% } %>
+    <%- include('../partials/flash') %>
+    <%- body %>
+  </main>
+
+  <%- include('../partials/footer') %>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
+  <% if (currentUser) { %>
+  <script src="/js/vendor/socket.io.min.js" defer></script>
+  <script src="/js/realtime.js" defer></script>
+  <% } %>
+  <% scripts.forEach((src) => { %><script src="<%= src %>" defer></script>
+  <% }) %>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<%
+  // One claim waiting for the reporter's decision. Expects: claim, returnTo ('dashboard' or 'claims').
+%>
+<li class="row-item block">
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <p>
+      <strong><%= claim.claimant ? claim.claimant.name.split(' ')[0] : 'Former member' %></strong>
+      claimed <a href="/items/<%= claim.item._id %>"><%= claim.item.title %></a>
+      <span class="text-sm text-gray-600">on <%= fmt.formatDate(claim.createdAt) %></span>
+    </p>
+    <span class="badge badge-<%= claim.status %>"><%= claim.status %></span>
+  </div>
+  <p class="claim-proof mt-2"><%= claim.message %></p>
+  <% if (claim.status === 'pending') { %>
+    <div class="flex flex-wrap gap-2 mt-3">
+      <form action="/claims/<%= claim._id %>/approve" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+        <input type="hidden" name="returnTo" value="<%= returnTo %>">
+        <button class="btn btn-found btn-sm" type="submit">Approve and open chat</button>
+      </form>
+      <form action="/claims/<%= claim._id %>/reject" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+        <input type="hidden" name="returnTo" value="<%= returnTo %>">
+        <button class="btn btn-danger btn-sm" type="submit">Reject</button>
+      </form>
+    </div>
+  <% } %>
+</li>

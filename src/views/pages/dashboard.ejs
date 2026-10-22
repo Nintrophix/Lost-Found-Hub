@@ -1,0 +1,82 @@
+<div class="container pt-4 pb-10">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-3xl font-extrabold">Hi <%= currentUser.firstName %></h1>
+      <p class="mt-1 text-gray-700">Your listings, claims and conversations in one place.</p>
+    </div>
+    <a class="btn btn-primary" href="/items/new"><%- icon('plus', 'icon-sm') %>Report an item</a>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-2 mt-6">
+    <section class="panel panel-pad lg:col-span-2" aria-labelledby="review-heading">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h2 id="review-heading" class="text-xl font-bold">Claims on your items</h2>
+        <a class="text-sm font-semibold" href="/claims">All claims</a>
+      </div>
+      <% if (claimsOnMine.length) { %>
+        <ul class="list-plain">
+          <% claimsOnMine.forEach((claim) => { %>
+            <%- include('../partials/claimReview', { claim, returnTo: 'dashboard' }) %>
+          <% }) %>
+        </ul>
+      <% } else { %>
+        <p class="text-gray-700">No claims are waiting for your review.</p>
+      <% } %>
+    </section>
+
+    <section class="panel panel-pad" aria-labelledby="items-heading">
+      <h2 id="items-heading" class="text-xl font-bold mb-2">Your reported items</h2>
+      <% if (myItems.length) { %>
+        <ul class="list-plain">
+          <% myItems.forEach((item) => { %>
+            <li class="row-item">
+              <div class="min-w-0">
+                <a class="font-semibold" href="/items/<%= item._id %>"><%= item.title %></a>
+                <p class="text-sm text-gray-600"><%= item.location %>, <%= fmt.formatDate(item.dateLostOrFound) %></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="badge badge-<%= item.type %>"><%= item.type === 'lost' ? 'Lost' : 'Found' %></span>
+                <span class="badge badge-<%= item.status %>"><%= statusLabels[item.status] %></span>
+                <a class="btn btn-secondary btn-sm" href="/items/<%= item._id %>/edit">Edit<span class="sr-only"> <%= item.title %></span></a>
+              </div>
+            </li>
+          <% }) %>
+        </ul>
+      <% } else { %>
+        <p class="text-gray-700">You have not reported anything yet. <a class="prose-link" href="/items/new">Report a lost or found item</a>.</p>
+      <% } %>
+    </section>
+
+    <section class="panel panel-pad" aria-labelledby="claims-heading">
+      <h2 id="claims-heading" class="text-xl font-bold mb-2">Claims you made</h2>
+      <% if (myClaims.length) { %>
+        <ul class="list-plain">
+          <% myClaims.forEach((claim) => { %>
+            <li class="row-item">
+              <% if (claim.item) { %>
+                <a class="font-semibold" href="/items/<%= claim.item._id %>"><%= claim.item.title %></a>
+              <% } else { %>
+                <span class="font-semibold">Listing removed</span>
+              <% } %>
+              <span class="badge badge-<%= claim.status %>"><%= claim.status %></span>
+            </li>
+          <% }) %>
+        </ul>
+      <% } else { %>
+        <p class="text-gray-700">No claims yet. If you lost something, <a class="prose-link" href="/items?type=found">check the found items</a>.</p>
+      <% } %>
+    </section>
+
+    <section class="panel panel-pad lg:col-span-2" aria-labelledby="conversations-heading">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h2 id="conversations-heading" class="text-xl font-bold">Recent conversations</h2>
+        <a class="text-sm font-semibold" href="/chat">All messages</a>
+      </div>
+      <% if (conversations.length) { %>
+        <%- include('../partials/conversationList', { conversations, headingTag: 'h3' }) %>
+      <% } else { %>
+        <p class="text-gray-700">No conversations yet. They start when you message someone or a claim is approved.</p>
+      <% } %>
+    </section>
+  </div>
+</div>

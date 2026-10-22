@@ -1,0 +1,28 @@
+<%
+  // Expects: item (lean document), headingTag ('h2' or 'h3').
+  // public/js/search.js builds the same markup for live results.
+  const tag = locals.headingTag || 'h3';
+%>
+<article class="item-card" data-type="<%= item.type %>">
+  <div class="item-thumb">
+    <% if (item.images && item.images.length) { %>
+      <img src="<%= item.images[0] %>" alt="<%= item.title %>" loading="lazy" width="400" height="300">
+    <% } else { %>
+      <div class="thumb-empty"><%- icon(item.category, 'icon-lg') %><span>No photo yet</span></div>
+    <% } %>
+  </div>
+  <div class="item-body">
+    <div class="badges">
+      <span class="badge badge-<%= item.type %>"><%= item.type === 'lost' ? 'Lost' : 'Found' %></span>
+      <% if (item.status !== 'open') { %>
+        <span class="badge badge-<%= item.status %>"><%= statusLabels[item.status] %></span>
+      <% } %>
+    </div>
+    <<%= tag %> class="item-title">
+      <a class="item-card-link" href="/items/<%= item._id %>"><%= item.title %></a>
+    </<%= tag %>>
+    <p class="meta"><%- icon('pin', 'icon-sm') %><span><%= item.location %></span></p>
+    <p class="meta"><%- icon('calendar', 'icon-sm') %><span><%= item.type === 'lost' ? 'Lost' : 'Found' %> <%= fmt.formatDate(item.dateLostOrFound) %></span></p>
+    <p class="meta"><%- icon('tag', 'icon-sm') %><span><%= categoryLabels[item.category] %></span></p>
+  </div>
+</article>

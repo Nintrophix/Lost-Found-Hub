@@ -1,0 +1,51 @@
+<div class="container pt-4 pb-10">
+  <h1 class="text-3xl font-extrabold">Claims</h1>
+  <p class="mt-2 text-gray-700">Claims on items you found, and claims you made on items other people found.</p>
+
+  <div class="grid gap-6 lg:grid-cols-2 mt-6">
+    <section class="panel panel-pad" aria-labelledby="review-heading">
+      <h2 id="review-heading" class="text-xl font-bold mb-3">Waiting for your review</h2>
+      <% if (pendingOnMyItems.length) { %>
+        <ul class="list-plain">
+          <% pendingOnMyItems.forEach((claim) => { %>
+            <%- include('../../partials/claimReview', { claim, returnTo: 'claims' }) %>
+          <% }) %>
+        </ul>
+      <% } else { %>
+        <p class="text-gray-700">No claims are waiting. When someone claims an item you found, it appears here.</p>
+      <% } %>
+
+      <% if (reviewedOnMyItems.length) { %>
+        <h3 class="text-lg font-bold mt-6 mb-2">Already reviewed</h3>
+        <ul class="list-plain">
+          <% reviewedOnMyItems.forEach((claim) => { %>
+            <%- include('../../partials/claimReview', { claim, returnTo: 'claims' }) %>
+          <% }) %>
+        </ul>
+      <% } %>
+    </section>
+
+    <section class="panel panel-pad" aria-labelledby="mine-heading">
+      <h2 id="mine-heading" class="text-xl font-bold mb-3">Claims you made</h2>
+      <% if (madeByMe.length) { %>
+        <ul class="list-plain">
+          <% madeByMe.forEach((claim) => { %>
+            <li class="row-item">
+              <div>
+                <% if (claim.item) { %>
+                  <a class="font-semibold" href="/items/<%= claim.item._id %>"><%= claim.item.title %></a>
+                <% } else { %>
+                  <span class="font-semibold">Listing removed</span>
+                <% } %>
+                <p class="text-sm text-gray-600">Sent <%= fmt.formatDate(claim.createdAt) %></p>
+              </div>
+              <span class="badge badge-<%= claim.status %>"><%= claim.status %></span>
+            </li>
+          <% }) %>
+        </ul>
+      <% } else { %>
+        <p class="text-gray-700">You have not claimed anything. <a class="prose-link" href="/items?type=found">Browse found items</a> to look for yours.</p>
+      <% } %>
+    </section>
+  </div>
+</div>

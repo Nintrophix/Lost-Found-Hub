@@ -1,0 +1,36 @@
+<%
+  const isCurrent = (match) => (match(currentPath) ? 'aria-current="page"' : '');
+%>
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/" class="brand">
+      <span class="brand-mark"><%- icon('tag') %></span>
+      <span><%= siteName %></span>
+    </a>
+    <nav aria-label="Main">
+      <ul class="nav-list">
+        <li><a class="nav-link" href="/items" <%- isCurrent((p) => p === '/items' || (/^\/items\/[a-f0-9]{24}$/.test(p))) %>>Browse items</a></li>
+        <% if (currentUser) { %>
+          <li><a class="nav-link" href="/dashboard" <%- isCurrent((p) => p === '/dashboard' || p === '/claims') %>>Dashboard</a></li>
+          <li>
+            <a class="nav-link" href="/chat" <%- isCurrent((p) => p.startsWith('/chat')) %>>
+              Messages
+              <span class="count-badge" id="unread-badge" aria-hidden="true" <%= unreadCount ? '' : 'hidden' %>><%= unreadCount %></span>
+              <span class="sr-only" id="unread-badge-label"><%= unreadCount ? `, ${unreadCount} unread` : '' %></span>
+            </a>
+          </li>
+          <li>
+            <form action="/logout" method="post">
+              <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+              <button type="submit" class="nav-link btn-link-plain">Log out</button>
+            </form>
+          </li>
+        <% } else { %>
+          <li><a class="nav-link" href="/login" <%- isCurrent((p) => p === '/login') %>>Log in</a></li>
+          <li><a class="nav-link" href="/register" <%- isCurrent((p) => p === '/register') %>>Create account</a></li>
+        <% } %>
+        <li><a class="btn btn-primary btn-sm" href="/items/new"><%- icon('plus', 'icon-sm') %>Report an item</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>

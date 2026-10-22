@@ -1,0 +1,63 @@
+<%
+  // Shared fields for the new and edit item forms. Expects: values, errors.
+  const invalid = (f) => (errors[f] ? 'aria-invalid="true" aria-describedby="' + f + '-error"' : '');
+%>
+<fieldset class="field">
+  <legend class="label">Did you lose it or find it?</legend>
+  <div class="choice-group" <%- errors.type ? 'aria-describedby="type-error"' : '' %>>
+    <label class="choice"><input type="radio" name="type" value="lost" required <%= values.type === 'lost' ? 'checked' : '' %>> I lost it</label>
+    <label class="choice"><input type="radio" name="type" value="found" <%= values.type === 'found' ? 'checked' : '' %>> I found it</label>
+  </div>
+  <%- include('fieldError', { f: 'type', errors }) %>
+</fieldset>
+
+<div class="field">
+  <label class="label" for="title">Title</label>
+  <input class="input" id="title" name="title" type="text" required minlength="3" maxlength="100"
+         value="<%= values.title %>" placeholder="For example: Navy blue water bottle with stickers" <%- invalid('title') %>>
+  <%- include('fieldError', { f: 'title', errors }) %>
+</div>
+
+<div class="grid gap-x-4 sm:grid-cols-2">
+  <div class="field">
+    <label class="label" for="category">Category</label>
+    <select class="select" id="category" name="category" required <%- invalid('category') %>>
+      <option value="">Choose a category</option>
+      <% categories.forEach((c) => { %>
+        <option value="<%= c %>" <%= values.category === c ? 'selected' : '' %>><%= categoryLabels[c] %></option>
+      <% }) %>
+    </select>
+    <%- include('fieldError', { f: 'category', errors }) %>
+  </div>
+  <div class="field">
+    <label class="label" for="color">Main color <span class="font-normal text-gray-600">(optional)</span></label>
+    <input class="input" id="color" name="color" type="text" maxlength="30" value="<%= values.color %>" <%- invalid('color') %>>
+    <%- include('fieldError', { f: 'color', errors }) %>
+  </div>
+</div>
+
+<div class="grid gap-x-4 sm:grid-cols-2">
+  <div class="field">
+    <label class="label" for="location">Where</label>
+    <input class="input" id="location" name="location" type="text" required minlength="2" maxlength="100"
+           value="<%= values.location %>" placeholder="Building and floor or room" <%- invalid('location') %>>
+    <%- include('fieldError', { f: 'location', errors }) %>
+  </div>
+  <div class="field">
+    <label class="label" for="dateLostOrFound">When</label>
+    <input class="input" id="dateLostOrFound" name="dateLostOrFound" type="date" required
+           value="<%= values.dateLostOrFound %>" <%- invalid('dateLostOrFound') %>>
+    <%- include('fieldError', { f: 'dateLostOrFound', errors }) %>
+  </div>
+</div>
+
+<div class="field">
+  <label class="label" for="description">Description</label>
+  <textarea class="textarea" id="description" name="description" required minlength="10" maxlength="2000"
+            aria-describedby="description-hint<%= errors.description ? ' description-error' : '' %>"
+            <%- errors.description ? 'aria-invalid="true"' : '' %>><%= values.description %></textarea>
+  <span class="hint" id="description-hint">
+    Brand, size, stickers, damage, what was inside. If you found it, hold back one detail so the owner can prove it is theirs.
+  </span>
+  <%- include('fieldError', { f: 'description', errors }) %>
+</div>

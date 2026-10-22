@@ -1,0 +1,16 @@
+<%
+  // File input with client-side previews (public/js/upload-preview.js).
+  // Expects: errors, maxImages, existingCount.
+%>
+<div class="field">
+  <label class="label" for="images"><%= existingCount ? 'Add photos' : 'Photos' %> <span class="font-normal text-gray-600">(optional)</span></label>
+  <input class="input" id="images" name="images" type="file" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+         data-max-total="<%= maxImages %>" data-max-mb="<%= maxUploadMb %>"
+         aria-describedby="images-hint<%= errors.images ? ' images-error' : '' %>" <%- errors.images ? 'aria-invalid="true"' : '' %>>
+  <span class="hint" id="images-hint">
+    Up to <%= maxImages %> photos per item in total. JPEG, PNG or WebP, <%= maxUploadMb %> MB or smaller each.
+  </span>
+  <span class="field-error" id="images-client-error" role="alert" hidden></span>
+  <%- include('fieldError', { f: 'images', errors }) %>
+  <div class="preview-grid" id="images-preview"></div>
+</div>

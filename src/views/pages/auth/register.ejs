@@ -1,0 +1,59 @@
+<%
+  const invalid = (f) => (errors[f] ? `aria-invalid="true" aria-describedby="${f}-error"` : '');
+%>
+<div class="container-form pt-4 pb-10">
+  <h1 class="text-3xl font-extrabold">Create an account</h1>
+  <p class="mt-2 text-gray-700">
+    Your name and email stay private. Other people only see your first name on listings and in chats.
+  </p>
+
+  <form class="panel panel-pad mt-6" action="/register" method="post" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+    <div class="field">
+      <label class="label" for="name">Full name</label>
+      <input class="input" id="name" name="name" type="text" autocomplete="name" required minlength="2" maxlength="80"
+             value="<%= values.name || '' %>" <%- invalid('name') %>>
+      <%- include('../../partials/fieldError', { f: 'name', errors }) %>
+    </div>
+    <div class="field">
+      <label class="label" for="email">University email</label>
+      <input class="input" id="email" name="email" type="email" autocomplete="email" required maxlength="254"
+             value="<%= values.email || '' %>" <%- invalid('email') %>>
+      <%- include('../../partials/fieldError', { f: 'email', errors }) %>
+    </div>
+    <fieldset class="field">
+      <legend class="label">I am</legend>
+      <div class="choice-group">
+        <label class="choice"><input type="radio" name="role" value="student" <%= values.role !== 'staff' ? 'checked' : '' %>> A student</label>
+        <label class="choice"><input type="radio" name="role" value="staff" <%= values.role === 'staff' ? 'checked' : '' %>> Staff or faculty</label>
+      </div>
+      <%- include('../../partials/fieldError', { f: 'role', errors }) %>
+    </fieldset>
+    <div class="field">
+      <label class="label" for="campusId">Campus ID number <span class="font-normal text-gray-600">(optional)</span></label>
+      <input class="input" id="campusId" name="campusId" type="text" maxlength="40" autocomplete="off"
+             value="<%= values.campusId || '' %>" aria-describedby="campusId-hint<%= errors.campusId ? ' campusId-error' : '' %>"
+             <%- errors.campusId ? 'aria-invalid="true"' : '' %>>
+      <span class="hint" id="campusId-hint">Helps campus security match ID cards that are handed in. Never shown publicly.</span>
+      <%- include('../../partials/fieldError', { f: 'campusId', errors }) %>
+    </div>
+    <div class="field">
+      <label class="label" for="password">Password</label>
+      <input class="input" id="password" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="72"
+             aria-describedby="password-hint<%= errors.password ? ' password-error' : '' %>" <%- errors.password ? 'aria-invalid="true"' : '' %>>
+      <span class="hint" id="password-hint">At least 8 characters.</span>
+      <%- include('../../partials/fieldError', { f: 'password', errors }) %>
+    </div>
+    <div class="field">
+      <label class="label" for="confirmPassword">Confirm password</label>
+      <input class="input" id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required
+             <%- invalid('confirmPassword') %>>
+      <%- include('../../partials/fieldError', { f: 'confirmPassword', errors }) %>
+    </div>
+    <button class="btn btn-primary w-full" type="submit">Create account</button>
+    <p class="mt-4 text-sm text-gray-700">
+      Already registered? <a class="prose-link" href="/login">Log in</a>.
+      By creating an account you agree to how we handle data in our <a class="prose-link" href="/privacy">privacy policy</a>.
+    </p>
+  </form>
+</div>

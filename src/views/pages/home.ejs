@@ -1,0 +1,93 @@
+<section class="hero">
+  <div class="container py-10 md:py-14 grid gap-10 md:grid-cols-5 md:items-center">
+    <div class="md:col-span-3">
+      <h1 class="text-3xl md:text-4xl font-extrabold">Lost something on campus? Found something that isn't yours?</h1>
+      <p class="mt-4 text-lg text-gray-700 max-w-2xl">
+        Post what you lost or found with a photo, the building and the date. Owners prove an item is
+        theirs with a claim, and the finder arranges the hand-off in a private chat.
+      </p>
+
+      <form class="mt-6 max-w-xl" action="/items" method="get" role="search">
+        <label for="home-search" class="label">Search lost and found items</label>
+        <div class="search-row">
+          <input id="home-search" class="input" type="search" name="q" maxlength="200"
+                 placeholder="For example: blue water bottle library" autocomplete="off">
+          <button class="btn btn-primary" type="submit"><%- icon('search') %>Search</button>
+        </div>
+      </form>
+
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a class="btn btn-lost" href="/items/new?type=lost">I lost something</a>
+        <a class="btn btn-found" href="/items/new?type=found">I found something</a>
+      </div>
+    </div>
+
+    <div class="md:col-span-2">
+      <h2 class="text-lg font-bold mb-3">Listings right now</h2>
+      <dl class="stat-list">
+        <div class="stat stat-lost">
+          <dt><a class="stat-link" href="/items?type=lost&amp;status=open">Open lost reports</a></dt>
+          <dd><%= counts.lostOpen %></dd>
+        </div>
+        <div class="stat stat-found">
+          <dt><a class="stat-link" href="/items?type=found&amp;status=open">Found items waiting for owners</a></dt>
+          <dd><%= counts.foundOpen %></dd>
+        </div>
+        <div class="stat stat-returned">
+          <dt><a class="stat-link" href="/items?status=resolved">Items returned through this site</a></dt>
+          <dd><%= counts.returned %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="container py-10" aria-labelledby="recent-heading">
+  <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+    <h2 id="recent-heading" class="text-2xl font-bold">Recently reported</h2>
+    <a class="font-semibold inline-flex items-center gap-1" href="/items">See all items <%- icon('arrowRight', 'icon-sm') %></a>
+  </div>
+  <% if (recent.length) { %>
+    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <% recent.forEach((item) => { %>
+        <li><%- include('../partials/itemCard', { item, headingTag: 'h3' }) %></li>
+      <% }) %>
+    </ul>
+  <% } else { %>
+    <div class="empty-state">
+      <p class="font-semibold">No open listings yet.</p>
+      <p class="mt-1 text-gray-700">Be the first: <a class="prose-link" href="/items/new">report a lost or found item</a>.</p>
+    </div>
+  <% } %>
+</section>
+
+<section class="container pb-4" aria-labelledby="how-heading">
+  <div class="panel panel-pad grid gap-8 md:grid-cols-2">
+    <div>
+      <h2 id="how-heading" class="text-2xl font-bold">How returning an item works</h2>
+      <p class="mt-3 text-gray-700">
+        Only the reporter's first name is shown publicly. Email addresses are never displayed,
+        and every conversation is private to the two people in it.
+      </p>
+    </div>
+    <ol class="steps">
+      <li><strong>Report it.</strong> Describe the item, where and when it was lost or found, and add up to four photos.</li>
+      <li><strong>Match it.</strong> Owners search by keyword, category, place and date. Finders can respond to lost reports with "I found this".</li>
+      <li><strong>Prove it.</strong> Owners claim a found item by describing details only they would know. The finder approves or rejects the claim.</li>
+      <li><strong>Hand it over.</strong> An approved claim opens a chat to agree on a time and place. The finder then marks the item as returned.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="container py-10" aria-labelledby="category-heading">
+  <h2 id="category-heading" class="text-2xl font-bold mb-4">Browse by category</h2>
+  <ul class="grid gap-3 grid-cols-2 md:grid-cols-4">
+    <% categories.forEach((c) => { %>
+      <li>
+        <a class="panel flex items-center gap-3 p-4 font-semibold hover:bg-gray-50" href="/items?category=<%= c %>">
+          <%- icon(c) %><span><%= categoryLabels[c] %></span>
+        </a>
+      </li>
+    <% }) %>
+  </ul>
+</section>

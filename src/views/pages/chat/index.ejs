@@ -1,0 +1,17 @@
+<div class="container-narrow pt-4 pb-10">
+  <h1 class="text-3xl font-extrabold">Messages</h1>
+  <p class="mt-2 text-gray-700">Private conversations about items. Only you and the other person can read them.</p>
+
+  <section class="panel panel-pad mt-6" aria-label="Conversations">
+    <% if (conversations.length) { %>
+      <%- include('../../partials/conversationList', { conversations, headingTag: 'h2' }) %>
+    <% } else { %>
+      <div class="text-center py-6">
+        <p class="font-semibold">No conversations yet.</p>
+        <p class="mt-1 text-gray-700">
+          Open any <a class="prose-link" href="/items">listing</a> and choose "Message" to contact the person who reported it.
+        </p>
+      </div>
+    <% } %>
+  </section>
+</div>

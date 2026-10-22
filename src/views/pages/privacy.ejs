@@ -1,0 +1,68 @@
+<div class="container-narrow pt-4 pb-10">
+  <h1 class="text-3xl font-extrabold">Privacy policy</h1>
+  <p class="mt-2 text-gray-700">Last updated <%= lastUpdated %>.</p>
+
+  <div class="prose mt-6">
+    <p>
+      <%= siteName %> helps people on campus return lost belongings. This page explains what we collect,
+      why we collect it, who can see it and how long we keep it. We only collect what the service needs to work.
+    </p>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li><strong>Account details:</strong> your name, email address, whether you are a student or staff member, and your campus ID number if you choose to add it. Your password is stored only as a one-way bcrypt hash.</li>
+      <li><strong>Listings:</strong> the title, description, category, color, location, date and photos you add when you report an item.</li>
+      <li><strong>Claims:</strong> the proof-of-ownership details you write when you claim an item.</li>
+      <li><strong>Messages:</strong> the text of chats you take part in, when each message was sent and whether it has been read.</li>
+      <li><strong>Session cookie:</strong> one cookie named <code>lf.sid</code> that keeps you logged in. It expires after 7 days without use.</li>
+    </ul>
+
+    <h2>What other people can see</h2>
+    <ul>
+      <li>Anyone, including visitors who are not logged in, can see listings and their photos together with the reporter's first name.</li>
+      <li>Your full name, email address and campus ID are never shown to other users.</li>
+      <li>A claim is visible only to you and to the person who reported the item.</li>
+      <li>A conversation is visible only to its two participants.</li>
+    </ul>
+    <p>Photos can contain more than you intend. Avoid uploading images that show faces, ID numbers or card numbers in full.</p>
+
+    <h2>How we use it</h2>
+    <ul>
+      <li>To show listings and let people search them.</li>
+      <li>To let owners claim items and let finders review those claims.</li>
+      <li>To deliver chat messages and show unread counts and read receipts.</li>
+      <li>To protect the service, for example by limiting repeated login attempts.</li>
+    </ul>
+    <p>We do not sell data, show advertising or use analytics or tracking cookies.</p>
+
+    <h2>Third parties</h2>
+    <p>
+      Page styles are loaded from the jsDelivr content delivery network, which receives your IP address and browser
+      details when it serves the stylesheet. No other third-party services receive your data.
+    </p>
+
+    <h2>How long we keep it</h2>
+    <ul>
+      <li>Listings, claims and messages are kept until they are deleted.</li>
+      <li>When you delete a listing, its photos, its claims and every conversation about it are deleted with it.</li>
+      <li>Login sessions are removed automatically 7 days after they were last used.</li>
+    </ul>
+
+    <h2>Your choices</h2>
+    <p>
+      You can edit or delete any listing you created from your <a href="/dashboard">dashboard</a>. To get a copy of your data
+      or to have your account deleted,
+      <% if (contactEmail) { %>
+        email <a href="mailto:<%= contactEmail %>"><%= contactEmail %></a>.
+      <% } else { %>
+        contact the campus office that runs this service.
+      <% } %>
+      We respond within 30 days.
+    </p>
+
+    <h2>Changes to this policy</h2>
+    <p>If we change how data is handled, we will update this page and the date at the top.</p>
+
+    <p class="mt-8"><a href="/items">Browse lost and found items</a> or <a href="/">go back to the home page</a>.</p>
+  </div>
+</div>

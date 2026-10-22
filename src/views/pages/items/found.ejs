@@ -1,0 +1,26 @@
+<div class="container-narrow pt-4 pb-10">
+  <h1 class="text-3xl font-extrabold">I found this item</h1>
+  <p class="mt-2 text-gray-700">
+    Your message goes privately to the person who lost <strong><%= item.title %></strong>
+    (<%= item.location %>, <%= fmt.formatDate(item.dateLostOrFound) %>). You can keep chatting after you send it.
+  </p>
+
+  <form class="panel panel-pad mt-6" action="/items/<%= item._id %>/found" method="post" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+    <div class="field">
+      <label class="label" for="message">Where and when did you find it?</label>
+      <textarea class="textarea" id="message" name="message" required minlength="10" maxlength="2000"
+                aria-describedby="message-hint<%= errors.message ? ' message-error' : '' %>"
+                <%- errors.message ? 'aria-invalid="true"' : '' %>><%= values.message %></textarea>
+      <span class="hint" id="message-hint">
+        Say where it is now, for example "handed in at the library front desk" or "I still have it".
+        Ask the owner to describe it before you meet.
+      </span>
+      <%- include('../../partials/fieldError', { f: 'message', errors }) %>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <button class="btn btn-lost" type="submit">Send to owner</button>
+      <a class="btn btn-secondary" href="/items/<%= item._id %>">Cancel</a>
+    </div>
+  </form>
+</div>

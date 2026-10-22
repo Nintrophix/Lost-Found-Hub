@@ -1,0 +1,31 @@
+<div class="container-narrow pt-4 pb-10">
+  <h1 class="text-3xl font-extrabold">Edit listing</h1>
+  <p class="mt-2 text-gray-700">Changes are visible as soon as you save.</p>
+
+  <form class="panel panel-pad mt-6" action="/items/<%= item._id %>/edit" method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+    <%- include('../../partials/itemFormFields', { values, errors }) %>
+
+    <% if (item.images.length) { %>
+      <fieldset class="field">
+        <legend class="label">Current photos</legend>
+        <span class="hint mt-0 mb-2">Tick a photo to remove it when you save.</span>
+        <div class="preview-grid">
+          <% item.images.forEach((src, i) => { %>
+            <figure class="existing-image">
+              <img src="<%= src %>" alt="<%= item.title %>, image <%= i + 1 %> of <%= item.images.length %>" width="120" height="120" loading="lazy">
+              <label><input type="checkbox" name="removeImages" value="<%= src %>"> Remove</label>
+            </figure>
+          <% }) %>
+        </div>
+      </fieldset>
+    <% } %>
+
+    <%- include('../../partials/imageInput', { errors, maxImages, existingCount: item.images.length }) %>
+
+    <div class="flex flex-wrap gap-3 mt-2">
+      <button class="btn btn-primary" type="submit">Save changes</button>
+      <a class="btn btn-secondary" href="/items/<%= item._id %>">Cancel</a>
+    </div>
+  </form>
+</div>

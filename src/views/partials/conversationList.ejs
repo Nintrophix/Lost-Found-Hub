@@ -1,0 +1,32 @@
+<%
+  // Expects: conversations (from chatController.listConversations), headingTag.
+  const tag = locals.headingTag || 'h2';
+%>
+<ul class="list-plain">
+  <% conversations.forEach((c) => { %>
+    <li class="row-item">
+      <div class="min-w-0 flex-1">
+        <<%= tag %> class="font-semibold">
+          <a href="/chat/<%= c.id %>">
+            <%= c.otherFirstName %>
+            <span class="font-normal text-gray-600">about</span>
+            <%= c.item ? c.item.title : 'a removed listing' %>
+          </a>
+        </<%= tag %>>
+        <p class="text-sm text-gray-700 truncate">
+          <% if (c.last) { %>
+            <%= c.lastIsMine ? 'You: ' : '' %><%= fmt.truncate(c.last.body, 90) %>
+          <% } else { %>
+            No messages yet. Say hello and suggest a place to meet.
+          <% } %>
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-600"><%= fmt.formatDateTime(c.lastMessageAt) %></span>
+        <% if (c.unread) { %>
+          <span class="unread-dot"><%= c.unread %><span class="sr-only"> unread</span></span>
+        <% } %>
+      </div>
+    </li>
+  <% }) %>
+</ul>

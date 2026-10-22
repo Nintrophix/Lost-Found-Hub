@@ -1,0 +1,25 @@
+<div class="container-form pt-4 pb-10">
+  <h1 class="text-3xl font-extrabold">Log in</h1>
+  <p class="mt-2 text-gray-700">Log in to report items, claim belongings and read your messages.</p>
+
+  <form class="panel panel-pad mt-6" action="/login" method="post" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+    <% if (errors.form) { %>
+      <div class="flash flash-error" role="alert"><p><%= errors.form %></p></div>
+    <% } %>
+    <div class="field">
+      <label class="label" for="email">Email</label>
+      <input class="input" id="email" name="email" type="email" autocomplete="email" required
+             value="<%= values.email || '' %>" <%- errors.email ? 'aria-invalid="true" aria-describedby="email-error"' : '' %>>
+      <%- include('../../partials/fieldError', { f: 'email', errors }) %>
+    </div>
+    <div class="field">
+      <label class="label" for="password">Password</label>
+      <input class="input" id="password" name="password" type="password" autocomplete="current-password" required
+             <%- errors.password ? 'aria-invalid="true" aria-describedby="password-error"' : '' %>>
+      <%- include('../../partials/fieldError', { f: 'password', errors }) %>
+    </div>
+    <button class="btn btn-primary w-full" type="submit">Log in</button>
+    <p class="mt-4 text-sm text-gray-700">New here? <a class="prose-link" href="/register">Create an account</a>.</p>
+  </form>
+</div>

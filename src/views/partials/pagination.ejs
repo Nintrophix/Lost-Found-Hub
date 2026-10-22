@@ -1,0 +1,29 @@
+<%
+  // Expects: page, totalPages, pageUrl(n). public/js/search.js renders the same markup.
+  const pages = [];
+  for (let n = 1; n <= totalPages; n += 1) {
+    if (n === 1 || n === totalPages || Math.abs(n - page) <= 1) pages.push(n);
+    else if (pages[pages.length - 1] !== '...') pages.push('...');
+  }
+%>
+<% if (totalPages > 1) { %>
+<nav class="pagination mt-8" aria-label="Pagination">
+  <ul>
+    <% if (page > 1) { %>
+      <li><a class="page-link" href="<%= pageUrl(page - 1) %>" data-page="<%= page - 1 %>" rel="prev">Previous</a></li>
+    <% } %>
+    <% pages.forEach((n) => { %>
+      <% if (n === '...') { %>
+        <li><span class="page-gap" aria-hidden="true">&hellip;</span></li>
+      <% } else if (n === page) { %>
+        <li><a class="page-link" href="<%= pageUrl(n) %>" data-page="<%= n %>" aria-current="page"><span class="sr-only">Page </span><%= n %></a></li>
+      <% } else { %>
+        <li><a class="page-link" href="<%= pageUrl(n) %>" data-page="<%= n %>"><span class="sr-only">Page </span><%= n %></a></li>
+      <% } %>
+    <% }) %>
+    <% if (page < totalPages) { %>
+      <li><a class="page-link" href="<%= pageUrl(page + 1) %>" data-page="<%= page + 1 %>" rel="next">Next</a></li>
+    <% } %>
+  </ul>
+</nav>
+<% } %>
