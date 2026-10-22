@@ -79,20 +79,11 @@
           <li><a class="nav-link" href="/register" <%- isCurrent((p) => p === '/register') %>><%- roll('Create account') %></a></li>
         <% } %>
 
-        <li class="dd" data-dropdown>
-          <button type="button" class="theme-toggle dd-trigger" id="theme-toggle" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false"
-                  aria-controls="menu-theme" aria-label="Color theme" title="Color theme">
+        <li>
+          <%# One click swaps light and dark (public/js/theme.js). %>
+          <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to dark theme" title="Switch to dark theme">
             <%- icon('moon', 'icon-moon') %><%- icon('sun', 'icon-sun') %>
           </button>
-          <div class="dd-content" id="menu-theme" role="menu" aria-label="Color theme" data-align="end" data-state="closed" hidden>
-            <p class="dd-label">Theme</p>
-            <div class="dd-separator" role="separator"></div>
-            <div role="group">
-              <button type="button" class="dd-item dd-radio" role="menuitemradio" aria-checked="false" tabindex="-1" data-theme-choice="light"><span class="dd-indicator"></span><%- icon('sun', 'icon-sm') %><span>Light</span></button>
-              <button type="button" class="dd-item dd-radio" role="menuitemradio" aria-checked="false" tabindex="-1" data-theme-choice="dark"><span class="dd-indicator"></span><%- icon('moon', 'icon-sm') %><span>Dark</span></button>
-              <button type="button" class="dd-item dd-radio" role="menuitemradio" aria-checked="false" tabindex="-1" data-theme-choice="system"><span class="dd-indicator"></span><%- icon('monitor', 'icon-sm') %><span>System</span></button>
-            </div>
-          </div>
         </li>
         <li><a class="btn btn-primary btn-sm" href="/items/new"><%- icon('plus', 'icon-sm icon-plus') %>Report an item</a></li>
       </ul>

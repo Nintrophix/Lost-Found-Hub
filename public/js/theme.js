@@ -1,9 +1,9 @@
 /*
  * Site-wide interface behavior:
- * - Light, dark or system theme, picked from the header theme menu (remembered in
- *   localStorage) and revealed as a circle growing from the toggle where View
- *   Transitions are supported.
- * - Lifts the first-visit page loader once the page is ready.
+ * - Light/dark theme toggle (remembered in localStorage; the system preference
+ *   applies until the toggle is used), revealed as a circle growing from the
+ *   toggle where View Transitions are supported.
+ * - Lifts the first-visit page loader once the intro has played.
  * - Shows a thin progress bar while the next page loads, and a busy spinner on
  *   the button that submitted a form.
  */
@@ -24,23 +24,12 @@
     return prefersDark.matches ? 'dark' : 'light';
   }
 
-  /** 'light', 'dark' or 'system' (no saved choice). */
-  function chosenTheme() {
-    var chosen = root.getAttribute('data-theme');
-    return chosen === 'dark' || chosen === 'light' ? chosen : 'system';
-  }
-
   function syncToggle() {
     var theme = currentTheme();
-    var choice = chosenTheme();
-    var label = 'Color theme: ' + (choice === 'system' ? 'system (' + theme + ')' : theme);
+    var label = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
     if (toggle) {
       toggle.setAttribute('aria-label', label);
       toggle.setAttribute('title', label);
-    }
-    var options = document.querySelectorAll('[data-theme-choice]');
-    for (var j = 0; j < options.length; j += 1) {
-      options[j].setAttribute('aria-checked', String(options[j].getAttribute('data-theme-choice') === choice));
     }
     var metas = document.querySelectorAll('meta[name="theme-color"]');
     for (var i = 0; i < metas.length; i += 1) {
@@ -49,29 +38,25 @@
     }
   }
 
-  function setTheme(choice) {
+  function setTheme(theme) {
+    root.setAttribute('data-theme', theme);
     try {
-      if (choice === 'system') localStorage.removeItem(STORAGE_KEY);
-      else localStorage.setItem(STORAGE_KEY, choice);
+      localStorage.setItem(STORAGE_KEY, theme);
     } catch (e) {
       /* Storage blocked: the choice lasts for this page only. */
     }
-    if (choice === 'system') root.removeAttribute('data-theme');
-    else root.setAttribute('data-theme', choice);
     syncToggle();
   }
 
-  function switchTheme(choice, x, y) {
-    var before = currentTheme();
-    var after = choice === 'system' ? (prefersDark.matches ? 'dark' : 'light') : choice;
-    // Only animate when the colors actually change.
-    if (before === after || !document.startViewTransition || reduceMotion.matches) {
-      setTheme(choice);
+  function switchTheme(x, y) {
+    var next = currentTheme() === 'dark' ? 'light' : 'dark';
+    if (!document.startViewTransition || reduceMotion.matches) {
+      setTheme(next);
       return;
     }
     var radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
     var transition = document.startViewTransition(function () {
-      setTheme(choice);
+      setTheme(next);
     });
     transition.ready.then(function () {
       root.animate(
@@ -83,14 +68,12 @@
     });
   }
 
-  // The toggle opens the theme menu (dropdown.js); its radio items pick the theme.
-  document.addEventListener('click', function (event) {
-    var option = event.target.closest('[data-theme-choice]');
-    if (!option) return;
-    var origin = (toggle || option).getBoundingClientRect();
-    switchTheme(option.getAttribute('data-theme-choice'), origin.left + origin.width / 2, origin.top + origin.height / 2);
-    if (toggle) toggle.focus({ preventScroll: true });
-  });
+  if (toggle) {
+    toggle.addEventListener('click', function () {
+      var rect = toggle.getBoundingClientRect();
+      switchTheme(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    });
+  }
   if (prefersDark.addEventListener) prefersDark.addEventListener('change', syncToggle);
   syncToggle();
 

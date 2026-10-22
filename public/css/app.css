@@ -821,7 +821,6 @@ body::before {
 .dd-chevron { color: var(--subtle); transition: transform .3s var(--ease-out); }
 .dd.is-open > .dd-trigger .dd-chevron { transform: rotate(180deg); }
 .dd.is-open > .nav-link { background: var(--sunken); }
-.dd.is-open > .theme-toggle { background: var(--sunken); border-color: var(--line-strong); }
 .dd-content {
   position: absolute; top: calc(100% + 6px); z-index: 50; min-width: 12rem; max-width: calc(100vw - 1rem);
   padding: .25rem; background: var(--surface); color: var(--ink);
@@ -865,10 +864,6 @@ body::before {
 .dd-muted { color: var(--subtle); font-weight: 400; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dd-separator { height: 1px; margin: .25rem -.25rem; background: var(--line); }
 .dd-shortcut { margin-left: auto; font-size: .72rem; letter-spacing: .04em; color: var(--subtle); font-variant-numeric: tabular-nums; }
-.dd-radio { padding-left: 1.9rem; }
-.dd-indicator { position: absolute; left: .7rem; top: 50%; width: .45rem; height: .45rem; margin-top: -.225rem; border-radius: 50%; transform: scale(0); transition: transform .2s var(--ease-out); background: var(--link); }
-.dd-radio[aria-checked="true"] .dd-indicator { transform: scale(1); }
-.dd-radio[aria-checked="true"] { font-weight: 650; }
 .avatar {
   display: inline-flex; width: 1.6rem; height: 1.6rem; align-items: center; justify-content: center;
   border-radius: 5px; background: var(--brand); color: #fff; font-family: var(--font-display); font-weight: 800; font-size: .8rem;
