@@ -41,6 +41,8 @@
   --line: #dcd8cf;
   --line-strong: #8d929a;
   --topo: rgba(29, 78, 137, 0.075);
+  --topo-ink: #1d4e89;
+  --topo-opacity: 0.5;
   --topo-strong: rgba(29, 78, 137, 0.14);
 
   --brand: #1d4e89;
@@ -103,6 +105,8 @@
     --line: #2a323c;
     --line-strong: #5f6a77;
     --topo: rgba(140, 180, 230, 0.055);
+    --topo-ink: #8dbaf0;
+    --topo-opacity: 0.4;
     --topo-strong: rgba(140, 180, 230, 0.11);
     --brand: #2f6db8;
     --brand-hover: #3b7cc9;
@@ -156,6 +160,8 @@
   --line: #2a323c;
   --line-strong: #5f6a77;
   --topo: rgba(140, 180, 230, 0.055);
+    --topo-ink: #8dbaf0;
+    --topo-opacity: 0.4;
   --topo-strong: rgba(140, 180, 230, 0.11);
   --brand: #2f6db8;
   --brand-hover: #3b7cc9;
@@ -441,6 +447,12 @@ body::before {
   -webkit-mask: url("/img/topography.svg") 0 0 / 640px 640px repeat;
   mask: url("/img/topography.svg") 0 0 / 640px 640px repeat;
 }
+
+/* Animated version (public/js/topography.js). Once it is running, the static tile above is hidden. */
+.topo-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; color: var(--topo-ink); opacity: var(--topo-opacity); }
+.topo-bg canvas { position: absolute; inset: 0; display: block; }
+.has-topography body::before, .has-topography .hero::before { display: none; }
+.has-topography .hero { background: color-mix(in srgb, var(--surface) 45%, transparent); }
 
 /* ------------------------------------------------------------------ hero: the map shows through */
 .hero {

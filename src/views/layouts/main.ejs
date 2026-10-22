@@ -65,6 +65,7 @@
   <% }) %>
 </head>
 <body class="min-h-screen flex flex-col">
+  <div class="topo-bg" data-topography aria-hidden="true"><canvas></canvas></div>
   <div class="page-loader" aria-hidden="true">
     <span class="horizon-atmosphere"></span>
     <span class="horizon-content">
@@ -93,6 +94,7 @@
 
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
   <script src="/js/theme.js" defer></script>
+  <script src="/js/topography.js" defer></script>
   <script src="/js/dropdown.js" defer></script>
   <script src="/js/cursor.js" defer></script>
   <% if (currentUser) { %>
