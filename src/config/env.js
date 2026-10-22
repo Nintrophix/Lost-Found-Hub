@@ -45,9 +45,13 @@ if (isProd) {
   if (!config.sessionSecret || config.sessionSecret.length < 32) {
     missing.push('SESSION_SECRET (at least 32 characters)');
   }
-  if (!config.siteUrl) missing.push('SITE_URL');
   if (missing.length) {
     throw new Error(`Missing production configuration: ${missing.join(', ')}`);
+  }
+  // Without SITE_URL the site still runs, using the address it is visited on for
+  // canonical links and the sitemap. Set it once the final domain is known.
+  if (!config.siteUrl) {
+    console.warn('SITE_URL is not set: canonical links will use the request host. Set SITE_URL to your public address.');
   }
 }
 

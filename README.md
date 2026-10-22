@@ -92,7 +92,7 @@ To see real-time chat, log in as Ava in one browser and as Jordan in a private w
 | `SESSION_SECRET` | development-only value | Signs the session cookie. Required in production, at least 32 characters |
 | `NODE_ENV` | `development` | `production` enables secure cookies, HSTS, proxy trust and the canonical-domain redirect |
 | `MAX_UPLOAD_MB` | `5` | Maximum size of each uploaded image |
-| `SITE_URL` | request host | Public origin, for example `https://lostandfound.example.edu`. Used for canonical tags, sitemap, robots.txt and llms.txt. Required in production, except on Render, where the `onrender.com` address is used until you set it |
+| `SITE_URL` | request host | Public origin, for example `https://lostandfound.example.edu`. Used for canonical tags, sitemap, robots.txt and llms.txt. Recommended in production. If unset, Render's `onrender.com` address is used, or otherwise the address the site is visited on |
 | `SITE_CONTACT_EMAIL` | empty | Shown on the privacy policy page for data requests |
 
 Generate a session secret with:
