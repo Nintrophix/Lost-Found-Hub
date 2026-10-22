@@ -85,7 +85,9 @@
   function appendMessage(message) {
     if (hasMessage(message.id)) return;
     var stick = nearBottom() || message.sender.id === me;
-    log.insertBefore(buildMessage(message), latestAnchor);
+    var node = buildMessage(message);
+    node.classList.add('is-new');
+    log.insertBefore(node, latestAnchor);
     emptyEl.hidden = true;
     if (stick) scrollToBottom();
   }

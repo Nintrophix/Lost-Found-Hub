@@ -30,7 +30,7 @@
     <%- include('fieldError', { f: 'category', errors }) %>
   </div>
   <div class="field">
-    <label class="label" for="color">Main color <span class="font-normal text-gray-600">(optional)</span></label>
+    <label class="label" for="color">Main color <span class="font-normal text-subtle">(optional)</span></label>
     <input class="input" id="color" name="color" type="text" maxlength="30" value="<%= values.color %>" <%- invalid('color') %>>
     <%- include('fieldError', { f: 'color', errors }) %>
   </div>

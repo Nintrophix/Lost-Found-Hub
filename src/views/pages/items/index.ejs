@@ -9,9 +9,9 @@
   <div class="flex flex-wrap items-end justify-between gap-3 mb-6">
     <div>
       <h1 class="text-3xl font-extrabold">Lost and found items</h1>
-      <p class="mt-1 text-gray-700">Search by what it is and where it was. Results update as you type.</p>
+      <p class="mt-1 text-muted">Search by what it is and where it was. Results update as you type.</p>
     </div>
-    <a class="btn btn-primary" href="/items/new"><%- icon('plus', 'icon-sm') %>Report an item</a>
+    <a class="btn btn-primary" href="/items/new"><%- icon('plus', 'icon-sm icon-plus') %>Report an item</a>
   </div>
 
   <div class="grid gap-6 lg:grid-cols-4">
@@ -86,7 +86,7 @@
 
         <div id="results-empty" class="empty-state" <%= result.items.length ? 'hidden' : '' %>>
           <p class="font-semibold">Nothing matches yet.</p>
-          <p class="mt-1 text-gray-700">
+          <p class="mt-1 text-muted">
             Try fewer keywords or a wider date range. If you lost something, <a class="prose-link" href="/items/new?type=lost">report it</a>
             so finders can contact you.
           </p>

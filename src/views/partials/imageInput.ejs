@@ -3,7 +3,7 @@
   // Expects: errors, maxImages, existingCount.
 %>
 <div class="field">
-  <label class="label" for="images"><%= existingCount ? 'Add photos' : 'Photos' %> <span class="font-normal text-gray-600">(optional)</span></label>
+  <label class="label" for="images"><%= existingCount ? 'Add photos' : 'Photos' %> <span class="font-normal text-subtle">(optional)</span></label>
   <input class="input" id="images" name="images" type="file" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
          data-max-total="<%= maxImages %>" data-max-mb="<%= maxUploadMb %>"
          aria-describedby="images-hint<%= errors.images ? ' images-error' : '' %>" <%- errors.images ? 'aria-invalid="true"' : '' %>>

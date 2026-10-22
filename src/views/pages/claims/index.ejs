@@ -1,6 +1,6 @@
 <div class="container pt-4 pb-10">
   <h1 class="text-3xl font-extrabold">Claims</h1>
-  <p class="mt-2 text-gray-700">Claims on items you found, and claims you made on items other people found.</p>
+  <p class="mt-2 text-muted">Claims on items you found, and claims you made on items other people found.</p>
 
   <div class="grid gap-6 lg:grid-cols-2 mt-6">
     <section class="panel panel-pad" aria-labelledby="review-heading">
@@ -12,7 +12,7 @@
           <% }) %>
         </ul>
       <% } else { %>
-        <p class="text-gray-700">No claims are waiting. When someone claims an item you found, it appears here.</p>
+        <p class="text-muted">No claims are waiting. When someone claims an item you found, it appears here.</p>
       <% } %>
 
       <% if (reviewedOnMyItems.length) { %>
@@ -37,14 +37,14 @@
                 <% } else { %>
                   <span class="font-semibold">Listing removed</span>
                 <% } %>
-                <p class="text-sm text-gray-600">Sent <%= fmt.formatDate(claim.createdAt) %></p>
+                <p class="text-sm text-subtle">Sent <%= fmt.formatDate(claim.createdAt) %></p>
               </div>
               <span class="badge badge-<%= claim.status %>"><%= claim.status %></span>
             </li>
           <% }) %>
         </ul>
       <% } else { %>
-        <p class="text-gray-700">You have not claimed anything. <a class="prose-link" href="/items?type=found">Browse found items</a> to look for yours.</p>
+        <p class="text-muted">You have not claimed anything. <a class="prose-link" href="/items?type=found">Browse found items</a> to look for yours.</p>
       <% } %>
     </section>
   </div>

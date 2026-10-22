@@ -24,6 +24,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script nonce="<%= cspNonce %>">
+    /* Apply the saved theme before first paint, and mark the first page of a browser session for the loader. */
+    (function () {
+      var root = document.documentElement;
+      try {
+        var theme = localStorage.getItem('lf-theme');
+        if (theme === 'dark' || theme === 'light') root.setAttribute('data-theme', theme);
+        if (!sessionStorage.getItem('lf-seen')) {
+          root.classList.add('is-first-load');
+          sessionStorage.setItem('lf-seen', '1');
+        }
+      } catch (e) { /* Storage blocked: system theme, no loader. */ }
+    })();
+  </script>
   <title><%= pageTitle %></title>
   <% if (locals.description) { %><meta name="description" content="<%= description %>"><% } %>
   <% if (!locals.isErrorPage) { %><link rel="canonical" href="<%= canonicalUrl %>"><% } %>
@@ -35,7 +49,10 @@
   <meta property="og:url" content="<%= canonicalUrl %>">
   <% if (locals.ogImage) { %><meta property="og:image" content="<%= ogImage %>"><% } %>
   <meta name="twitter:card" content="<%= locals.ogImage ? 'summary_large_image' : 'summary' %>">
-  <meta name="theme-color" content="#1d4e89">
+  <meta name="theme-color" content="#f3f1ec" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1317" media="(prefers-color-scheme: dark)">
+  <link rel="preload" href="/fonts/public-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/archivo-variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
@@ -48,6 +65,19 @@
   <% }) %>
 </head>
 <body class="min-h-screen flex flex-col">
+  <div class="page-loader" aria-hidden="true">
+    <span class="horizon-atmosphere"></span>
+    <span class="horizon-content">
+      <span class="loader-tag">
+        <span class="loader-string"></span>
+        <span class="loader-swing"><span class="brand-mark"><%- icon('tag', 'icon-lg') %></span></span>
+      </span>
+      <span class="horizon-wordmark"><%= siteName %></span>
+      <span class="horizon"><span class="horizon-light"></span><span class="horizon-pearl"></span></span>
+      <span class="horizon-label">Opening the lost and found log</span>
+    </span>
+  </div>
+  <div class="nav-progress" id="nav-progress" aria-hidden="true"></div>
   <a class="skip-link" href="#main">Skip to main content</a>
   <%- include('../partials/header') %>
 
@@ -62,6 +92,7 @@
   <%- include('../partials/footer') %>
 
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
+  <script src="/js/theme.js" defer></script>
   <% if (currentUser) { %>
   <script src="/js/vendor/socket.io.min.js" defer></script>
   <script src="/js/realtime.js" defer></script>

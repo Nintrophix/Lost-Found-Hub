@@ -6,7 +6,7 @@
     <p>
       <strong><%= claim.claimant ? claim.claimant.name.split(' ')[0] : 'Former member' %></strong>
       claimed <a href="/items/<%= claim.item._id %>"><%= claim.item.title %></a>
-      <span class="text-sm text-gray-600">on <%= fmt.formatDate(claim.createdAt) %></span>
+      <span class="text-sm text-subtle">on <%= fmt.formatDate(claim.createdAt) %></span>
     </p>
     <span class="badge badge-<%= claim.status %>"><%= claim.status %></span>
   </div>

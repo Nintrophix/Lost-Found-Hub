@@ -1,6 +1,6 @@
 <div class="container-narrow pt-4 pb-10">
   <h1 class="text-3xl font-extrabold">Edit listing</h1>
-  <p class="mt-2 text-gray-700">Changes are visible as soon as you save.</p>
+  <p class="mt-2 text-muted">Changes are visible as soon as you save.</p>
 
   <form class="panel panel-pad mt-6" action="/items/<%= item._id %>/edit" method="post" enctype="multipart/form-data" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken() %>">

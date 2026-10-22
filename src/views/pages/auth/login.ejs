@@ -1,6 +1,6 @@
 <div class="container-form pt-4 pb-10">
   <h1 class="text-3xl font-extrabold">Log in</h1>
-  <p class="mt-2 text-gray-700">Log in to report items, claim belongings and read your messages.</p>
+  <p class="mt-2 text-muted">Log in to report items, claim belongings and read your messages.</p>
 
   <form class="panel panel-pad mt-6" action="/login" method="post" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
@@ -20,6 +20,6 @@
       <%- include('../../partials/fieldError', { f: 'password', errors }) %>
     </div>
     <button class="btn btn-primary w-full" type="submit">Log in</button>
-    <p class="mt-4 text-sm text-gray-700">New here? <a class="prose-link" href="/register">Create an account</a>.</p>
+    <p class="mt-4 text-sm text-muted">New here? <a class="prose-link" href="/register">Create an account</a>.</p>
   </form>
 </div>

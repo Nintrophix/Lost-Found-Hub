@@ -7,13 +7,13 @@
     <div>
       <h1 class="text-2xl font-extrabold">Chat with <%= other.firstName %></h1>
       <% if (item) { %>
-        <p class="mt-1 text-gray-700">
+        <p class="mt-1 text-muted">
           About <a class="prose-link" href="/items/<%= item._id %>"><%= item.title %></a>
           <span class="badge badge-<%= item.type %> ml-1"><%= item.type === 'lost' ? 'Lost' : 'Found' %></span>
           <span class="badge badge-<%= item.status %>"><%= statusLabels[item.status] %></span>
         </p>
       <% } else { %>
-        <p class="mt-1 text-gray-700">The listing for this conversation was removed.</p>
+        <p class="mt-1 text-muted">The listing for this conversation was removed.</p>
       <% } %>
     </div>
     <% if (item && String(item.reporter) === me && item.status !== 'resolved') { %>
@@ -34,7 +34,7 @@
       <div class="text-center" id="load-older-wrap" <%= hasMore ? '' : 'hidden' %>>
         <button type="button" class="btn btn-secondary btn-sm" id="load-older">Load older messages</button>
       </div>
-      <p class="text-center text-sm text-gray-600" id="chat-empty" <%= messages.length ? 'hidden' : '' %>>
+      <p class="text-center text-sm text-subtle" id="chat-empty" <%= messages.length ? 'hidden' : '' %>>
         No messages yet. Suggest a public place on campus and a time to meet.
       </p>
       <% messages.forEach((m) => { const mine = m.sender.id === me; %>
@@ -59,5 +59,5 @@
     </form>
     <p class="field-error px-3 pb-2" id="chat-error" role="alert" hidden></p>
   </section>
-  <p class="mt-3 text-sm text-gray-600">Meet in a public, staffed place such as a library desk or the student union. Never share passwords or payment details.</p>
+  <p class="mt-3 text-sm text-subtle">Meet in a public, staffed place such as a library desk or the student union. Never share passwords or payment details.</p>
 </div>

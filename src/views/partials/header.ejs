@@ -29,7 +29,12 @@
           <li><a class="nav-link" href="/login" <%- isCurrent((p) => p === '/login') %>>Log in</a></li>
           <li><a class="nav-link" href="/register" <%- isCurrent((p) => p === '/register') %>>Create account</a></li>
         <% } %>
-        <li><a class="btn btn-primary btn-sm" href="/items/new"><%- icon('plus', 'icon-sm') %>Report an item</a></li>
+        <li>
+          <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch color theme" title="Switch color theme">
+            <%- icon('moon', 'icon-moon') %><%- icon('sun', 'icon-sun') %>
+          </button>
+        </li>
+        <li><a class="btn btn-primary btn-sm" href="/items/new"><%- icon('plus', 'icon-sm icon-plus') %>Report an item</a></li>
       </ul>
     </nav>
   </div>

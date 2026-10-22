@@ -207,6 +207,14 @@ for notifications.
 - Errors are logged on the server. Clients only see a safe message, never a stack trace, in production.
 - The Socket.io browser client is served from this origin without its source map reference, and the app has no build step, so no source maps are published.
 
+## Styling
+
+- **Themes:** light and dark, following the system setting until the header toggle is used. The choice is saved in `localStorage` and applied before first paint, and switching reveals the new theme as a circle growing from the toggle where the browser supports View Transitions. All colors are CSS custom properties in `public/css/app.css`, and every text and background pair meets WCAG AA in both themes.
+- **Type:** Archivo (headings) and Public Sans (body), self-hosted from `public/fonts/` under the SIL Open Font License.
+- **Background:** the home hero is drawn as a ruled logbook page with a margin line, a nod to a lost-property log.
+- **Motion:** buttons lift slightly with a single sweep of light on hover and press in on click; submitted buttons show a spinner; a thin bar at the top tracks page navigation; new chat messages and live search results ease in. Everything respects `prefers-reduced-motion`.
+- **Page loader:** on the first page of a browser session, a full-screen loader shows the swinging luggage tag above a glowing horizon line. The horizon effect is ported to plain CSS from the 21st.dev community component [Horizon Page Loader](https://21st.dev/@johnmamanao/components/horizon-page-loader) by johnmamanao. It lifts as soon as the page is ready and hides itself after 1.4 seconds even if JavaScript fails.
+
 ## Notes
 
 - Tailwind is loaded as the precompiled v2.2.19 stylesheet from jsDelivr. The newer browser builds compile CSS in the page and print a production warning in the console, which this build avoids.
