@@ -26,6 +26,11 @@
     badge.textContent = String(total);
     badge.hidden = total === 0;
     if (badgeLabel) badgeLabel.textContent = total ? ', ' + total + ' unread' : '';
+    var menuCount = document.getElementById('unread-menu');
+    if (menuCount) {
+      menuCount.textContent = total + ' unread';
+      menuCount.hidden = total === 0;
+    }
   }
 
   function viewingConversation(conversationId) {
