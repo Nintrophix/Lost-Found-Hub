@@ -4,7 +4,7 @@
   "description": "University portal for reporting, searching and recovering lost and found items, with claims and real-time chat.",
   "main": "src/server.js",
   "private": true,
-  "license": "MIT",
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=20"
   },
