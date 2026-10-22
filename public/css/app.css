@@ -630,9 +630,10 @@ body::before {
   --horizon-pearl-border: color-mix(in srgb, var(--ink) 40%, transparent);
   position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; overflow: hidden; isolation: isolate;
   min-height: 100dvh; background: var(--bg); color: var(--ink);
-  animation: loader-out .55s var(--ease-out) 1.4s forwards;
+  /* Safety net: lifts on its own even if JavaScript never runs. */
+  animation: loader-out .6s var(--ease-out) 4.4s forwards;
 }
-.is-first-load.is-loaded .page-loader { animation: loader-out .55s var(--ease-out) forwards; }
+.is-first-load.is-loaded .page-loader { animation: loader-out .6s var(--ease-out) forwards; }
 @keyframes loader-out { to { opacity: 0; visibility: hidden; clip-path: inset(0 0 100% 0); } }
 .horizon-atmosphere {
   position: absolute; z-index: -1; inset: -18%;
@@ -641,17 +642,88 @@ body::before {
     linear-gradient(105deg, transparent 32%, color-mix(in srgb, var(--surface) 30%, transparent) 50%, transparent 68%);
   animation: horizon-atmosphere var(--horizon-ambient-duration) ease-in-out infinite;
 }
-.horizon-content { display: grid; width: min(420px, 72vw); place-items: center; }
-.loader-tag { position: relative; width: 52px; height: 74px; margin-bottom: 14px; }
-.loader-string { position: absolute; left: 50%; top: 0; width: 2px; height: 22px; margin-left: -1px; border-radius: 1px; background: var(--line-strong); }
-.loader-swing { position: absolute; left: 0; right: 0; top: 16px; transform-origin: 50% 4px; animation: tag-swing 1.1s cubic-bezier(.45, 0, .55, 1) infinite alternate; }
-.loader-swing .brand-mark { width: 52px; height: 52px; border-radius: 9px; margin: 0 auto; display: flex; box-shadow: var(--shadow-md); }
-@keyframes tag-swing { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
-.horizon-wordmark {
-  margin-bottom: 21px; color: color-mix(in srgb, var(--ink) 80%, transparent);
-  font-family: var(--font-display); font-size: 12px; font-weight: 750; font-stretch: 112%;
-  letter-spacing: .18em; line-height: 1; text-transform: uppercase; text-align: center;
+.horizon-content { display: grid; width: min(720px, 90vw); place-items: center; }
+/*
+ * Loader sequence (about 2.9s, then theme.js lifts the screen):
+ *   0.0s  string drops, logo tile pops in      0.35s tag outline draws itself
+ *   0.95s punch hole draws, tag starts swinging  1.0s  name rises letter by letter
+ *   1.9s  horizon line opens                    2.1s  status line fades in
+ */
+.loader-tag { position: relative; width: 84px; height: 112px; margin-bottom: 18px; }
+.loader-string {
+  position: absolute; left: 50%; top: 0; width: 2px; height: 28px; margin-left: -1px; border-radius: 1px; background: var(--line-strong);
+  transform-origin: top; animation: string-drop .45s var(--ease-out) both;
 }
+.loader-swing {
+  position: absolute; left: 0; right: 0; top: 22px; transform-origin: 50% 5px;
+  animation: tag-swing 2.4s ease-in-out 1.05s infinite;
+}
+.loader-mark {
+  width: 84px; height: 84px; border-radius: 14px; margin: 0 auto; display: flex; box-shadow: var(--shadow-lg);
+  animation: mark-in .7s var(--ease-out) .1s both;
+}
+.loader-logo { width: 48px; height: 48px; }
+.loader-logo path, .loader-logo circle { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.loader-logo path { animation: draw .8s var(--ease-out) .35s forwards; }
+.loader-logo .loader-logo-hole { animation: draw .35s var(--ease-out) .95s forwards; }
+@keyframes string-drop { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes mark-in { from { opacity: 0; transform: translateY(-10px) scale(.6) rotate(-14deg); } to { opacity: 1; transform: none; } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes tag-swing { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(8deg); } 75% { transform: rotate(-8deg); } }
+.loader-name {
+  margin-bottom: 26px; text-align: center; color: var(--ink);
+  font-family: var(--font-display); font-size: clamp(1.6rem, 1.1rem + 2.4vw, 2.5rem); font-weight: 850; font-stretch: 108%;
+  letter-spacing: -0.025em; line-height: 1.15; text-wrap: balance;
+}
+/* Each word clips its letters so they rise from a baseline. */
+.loader-word { display: inline-block; overflow: hidden; padding: 0 .02em .12em; vertical-align: top; white-space: nowrap; }
+.loader-ch { display: inline-block; animation: ch-in .55s var(--ease-out) both; }
+.loader-ch.is-amp { color: var(--lost-accent); }
+@keyframes ch-in { from { opacity: 0; transform: translateY(105%); } to { opacity: 1; transform: none; } }
+.loader-ch[data-i="1"] { animation-delay: 1032ms; }
+.loader-ch[data-i="2"] { animation-delay: 1064ms; }
+.loader-ch[data-i="3"] { animation-delay: 1096ms; }
+.loader-ch[data-i="4"] { animation-delay: 1128ms; }
+.loader-ch[data-i="5"] { animation-delay: 1160ms; }
+.loader-ch[data-i="6"] { animation-delay: 1192ms; }
+.loader-ch[data-i="7"] { animation-delay: 1224ms; }
+.loader-ch[data-i="8"] { animation-delay: 1256ms; }
+.loader-ch[data-i="9"] { animation-delay: 1288ms; }
+.loader-ch[data-i="10"] { animation-delay: 1320ms; }
+.loader-ch[data-i="11"] { animation-delay: 1352ms; }
+.loader-ch[data-i="12"] { animation-delay: 1384ms; }
+.loader-ch[data-i="13"] { animation-delay: 1416ms; }
+.loader-ch[data-i="14"] { animation-delay: 1448ms; }
+.loader-ch[data-i="15"] { animation-delay: 1480ms; }
+.loader-ch[data-i="16"] { animation-delay: 1512ms; }
+.loader-ch[data-i="17"] { animation-delay: 1544ms; }
+.loader-ch[data-i="18"] { animation-delay: 1576ms; }
+.loader-ch[data-i="19"] { animation-delay: 1608ms; }
+.loader-ch[data-i="20"] { animation-delay: 1640ms; }
+.loader-ch[data-i="21"] { animation-delay: 1672ms; }
+.loader-ch[data-i="22"] { animation-delay: 1704ms; }
+.loader-ch[data-i="23"] { animation-delay: 1736ms; }
+.loader-ch[data-i="24"] { animation-delay: 1768ms; }
+.loader-ch[data-i="25"] { animation-delay: 1800ms; }
+.loader-ch[data-i="26"] { animation-delay: 1832ms; }
+.loader-ch[data-i="27"] { animation-delay: 1864ms; }
+.loader-ch[data-i="28"] { animation-delay: 1896ms; }
+.loader-ch[data-i="29"] { animation-delay: 1928ms; }
+.loader-ch[data-i="30"] { animation-delay: 1960ms; }
+.loader-ch[data-i="31"] { animation-delay: 1992ms; }
+.loader-ch[data-i="32"] { animation-delay: 2024ms; }
+.loader-ch[data-i="33"] { animation-delay: 2056ms; }
+.loader-ch[data-i="34"] { animation-delay: 2088ms; }
+.loader-ch[data-i="35"] { animation-delay: 2120ms; }
+.loader-ch[data-i="36"] { animation-delay: 2152ms; }
+.loader-ch[data-i="37"] { animation-delay: 2184ms; }
+.loader-ch[data-i="38"] { animation-delay: 2216ms; }
+.loader-ch[data-i="39"] { animation-delay: 2248ms; }
+.loader-ch[data-i="40"] { animation-delay: 2280ms; }
+.page-loader .horizon { width: min(420px, 72vw); animation: horizon-in .7s var(--ease-out) 1.9s both; }
+.page-loader .horizon-label { animation: fade-up .5s var(--ease-out) 2.1s both; }
+@keyframes horizon-in { from { opacity: 0; transform: scaleX(.2); } to { opacity: 1; transform: none; } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .horizon { position: relative; display: block; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--horizon-line) 24% 76%, transparent); }
 .horizon::before, .horizon::after { content: ""; position: absolute; inset: 50% auto auto 50%; border-radius: 999px; transform: translate(-50%, -50%); }
 .horizon::before {
@@ -805,7 +877,9 @@ body::before {
   .btn::before { display: none; }
   .btn .icon, .theme-toggle .icon, a.panel .icon { transition: none; transform: none !important; }
   .results-grid-enter > li, .msg.is-new, .flash, .toast, .preview-grid figure { animation-name: fade-in; animation-duration: .2s; }
-  .loader-swing, .horizon-atmosphere, .horizon::before, .horizon::after, .horizon-pearl { animation: none; }
+  .loader-swing, .horizon-atmosphere, .horizon::before, .horizon::after, .horizon-pearl,
+  .loader-string, .loader-mark, .loader-ch, .page-loader .horizon, .page-loader .horizon-label { animation: none; }
+  .loader-logo path, .loader-logo circle { animation: none; stroke-dashoffset: 0; }
   .horizon-light { display: none; }
   .nav-progress.is-active { animation: none; transform: scaleX(.6); }
   .count-badge.is-bumped { animation: none; }

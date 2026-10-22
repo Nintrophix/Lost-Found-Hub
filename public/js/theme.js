@@ -97,14 +97,27 @@
   /* ------------------------------------------------------------ first-visit loader */
 
   if (root.classList.contains('is-first-load')) {
-    // Keep the loader up for at least a beat so it reads as intentional, not a flicker.
-    var wait = Math.max(0, 650 - performance.now());
-    window.setTimeout(function () {
+    // Let the logo and name sequence play out (about 2.9s); with reduced motion, just a beat.
+    var LOADER_MS = reduceMotion.matches ? 500 : 2900;
+    var lifted = false;
+    var liftTimer = null;
+
+    var lift = function () {
+      if (lifted) return;
+      lifted = true;
+      window.clearTimeout(liftTimer);
+      document.removeEventListener('pointerdown', lift, true);
+      document.removeEventListener('keydown', lift, true);
       root.classList.add('is-loaded');
       window.setTimeout(function () {
         root.classList.remove('is-first-load', 'is-loaded');
-      }, 600);
-    }, wait);
+      }, 650);
+    };
+
+    liftTimer = window.setTimeout(lift, Math.max(0, LOADER_MS - performance.now()));
+    // Any click, tap or key skips the intro.
+    document.addEventListener('pointerdown', lift, true);
+    document.addEventListener('keydown', lift, true);
   }
 
   /* ------------------------------------------------------------ navigation feedback */

@@ -66,14 +66,23 @@
 </head>
 <body class="min-h-screen flex flex-col">
   <div class="topo-bg" data-topography aria-hidden="true"><canvas></canvas></div>
+  <%# First-visit loader: the tag draws itself and swings, then the name rises in letter by letter (see app.css and theme.js). %>
   <div class="page-loader" aria-hidden="true">
     <span class="horizon-atmosphere"></span>
     <span class="horizon-content">
       <span class="loader-tag">
         <span class="loader-string"></span>
-        <span class="loader-swing"><span class="brand-mark"><%- icon('tag', 'icon-lg') %></span></span>
+        <span class="loader-swing">
+          <span class="brand-mark loader-mark">
+            <svg class="loader-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+              <path pathLength="1" d="M3.5 12.6V4.5a1 1 0 0 1 1-1h8.1l8 8a1 1 0 0 1 0 1.4l-7.2 7.2a1 1 0 0 1-1.4 0z"/>
+              <circle class="loader-logo-hole" pathLength="1" cx="8.5" cy="8.5" r="1.5"/>
+            </svg>
+          </span>
+        </span>
       </span>
-      <span class="horizon-wordmark"><%= siteName %></span>
+      <% let charIndex = 0; const words = siteName.split(' '); %>
+      <span class="loader-name"><% words.forEach((word, w) => { %><span class="loader-word"><% [...word].forEach((ch) => { charIndex += 1; %><span class="loader-ch<%= ch === '&' ? ' is-amp' : '' %>" data-i="<%= charIndex %>"><%= ch %></span><% }) %></span><%= w < words.length - 1 ? ' ' : '' %><% }) %></span>
       <span class="horizon"><span class="horizon-light"></span><span class="horizon-pearl"></span></span>
       <span class="horizon-label">Opening the lost and found log</span>
     </span>
