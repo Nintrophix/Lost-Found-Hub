@@ -1,5 +1,7 @@
 <%
   const isCurrent = (match) => (match(currentPath) ? 'aria-current="page"' : '');
+  // Link text that rolls up to a copy of itself on hover (see .nav-roll in app.css).
+  const roll = (text) => `<span class="nav-roll" data-text="${text}"><span>${text}</span></span>`;
 %>
 <header class="site-header">
   <div class="container header-inner">
@@ -9,27 +11,81 @@
     </a>
     <nav aria-label="Main">
       <ul class="nav-list">
-        <li><a class="nav-link" href="/items" <%- isCurrent((p) => p === '/items' || (/^\/items\/[a-f0-9]{24}$/.test(p))) %>>Browse items</a></li>
+        <%# Menus follow the dropdown-menu spec in public/js/dropdown.js. Without JavaScript each trigger is a normal link. %>
+        <li class="dd" data-dropdown>
+          <a class="nav-link dd-trigger" href="/items" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" aria-controls="menu-browse"
+             <%- isCurrent((p) => p === '/items' || (/^\/items\/[a-f0-9]{24}$/.test(p))) %>>
+            <%- roll('Browse items') %><%- icon('chevronDown', 'icon-sm dd-chevron') %>
+          </a>
+          <div class="dd-content" id="menu-browse" role="menu" aria-label="Browse items" data-align="start" data-state="closed" hidden>
+            <p class="dd-label">Browse listings</p>
+            <div class="dd-separator" role="separator"></div>
+            <div role="group">
+              <a class="dd-item" role="menuitem" tabindex="-1" href="/items"><%- icon('list', 'icon-sm') %><span>All items</span></a>
+              <a class="dd-item" role="menuitem" tabindex="-1" href="/items?type=lost"><%- icon('search', 'icon-sm dd-icon-lost') %><span>Lost items</span></a>
+              <a class="dd-item" role="menuitem" tabindex="-1" href="/items?type=found"><%- icon('other', 'icon-sm dd-icon-found') %><span>Found items</span></a>
+              <a class="dd-item" role="menuitem" tabindex="-1" href="/items?status=resolved"><%- icon('circleCheck', 'icon-sm') %><span>Returned items</span></a>
+            </div>
+            <div class="dd-separator" role="separator"></div>
+            <div class="dd-sub" data-dropdown-sub>
+              <button type="button" class="dd-item dd-sub-trigger" role="menuitem" tabindex="-1" aria-haspopup="menu" aria-expanded="false" data-sub-trigger>
+                <%- icon('grid', 'icon-sm') %><span>By category</span><%- icon('chevronRight', 'icon-sm dd-sub-chevron') %>
+              </button>
+              <div class="dd-content dd-sub-content" role="menu" aria-label="Categories" data-state="closed" hidden data-sub-content>
+                <% categories.forEach((c) => { %>
+                  <a class="dd-item" role="menuitem" tabindex="-1" href="/items?category=<%= c %>"><%- icon(c, 'icon-sm') %><span><%= categoryLabels[c] %></span></a>
+                <% }) %>
+              </div>
+            </div>
+          </div>
+        </li>
+
         <% if (currentUser) { %>
-          <li><a class="nav-link" href="/dashboard" <%- isCurrent((p) => p === '/dashboard' || p === '/claims') %>>Dashboard</a></li>
           <li>
             <a class="nav-link" href="/chat" <%- isCurrent((p) => p.startsWith('/chat')) %>>
-              Messages
+              <%- roll('Messages') %>
               <span class="count-badge" id="unread-badge" aria-hidden="true" <%= unreadCount ? '' : 'hidden' %>><%= unreadCount %></span>
               <span class="sr-only" id="unread-badge-label"><%= unreadCount ? `, ${unreadCount} unread` : '' %></span>
             </a>
           </li>
-          <li>
-            <form action="/logout" method="post">
-              <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
-              <button type="submit" class="nav-link btn-link-plain">Log out</button>
-            </form>
+          <li class="dd" data-dropdown>
+            <a class="nav-link dd-trigger account-trigger" href="/dashboard" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" aria-controls="menu-account"
+               <%- isCurrent((p) => p === '/dashboard' || p === '/claims') %>>
+              <span class="avatar" aria-hidden="true"><%= currentUser.firstName.charAt(0).toUpperCase() %></span>
+              <span><span class="sr-only">Account menu for </span><%= currentUser.firstName %></span><%- icon('chevronDown', 'icon-sm dd-chevron') %>
+            </a>
+            <div class="dd-content dd-wide" id="menu-account" role="menu" aria-label="Account" data-align="end" data-state="closed" hidden>
+              <div class="dd-label dd-account">
+                <span class="font-semibold"><%= currentUser.name %></span>
+                <span class="dd-muted"><%= currentUser.email %></span>
+              </div>
+              <div class="dd-separator" role="separator"></div>
+              <div role="group">
+                <a class="dd-item" role="menuitem" tabindex="-1" href="/dashboard"><%- icon('dashboard', 'icon-sm') %><span>Dashboard</span></a>
+                <a class="dd-item" role="menuitem" tabindex="-1" href="/chat"><%- icon('chat', 'icon-sm') %><span>Messages</span>
+                  <span class="dd-shortcut" id="unread-menu" <%= unreadCount ? '' : 'hidden' %>><%= unreadCount %> unread</span></a>
+                <a class="dd-item" role="menuitem" tabindex="-1" href="/claims"><%- icon('shield', 'icon-sm') %><span>Claims</span></a>
+                <a class="dd-item" role="menuitem" tabindex="-1" href="/items/new"><%- icon('plus', 'icon-sm') %><span>Report an item</span></a>
+              </div>
+              <div class="dd-separator" role="separator"></div>
+              <form action="/logout" method="post">
+                <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+                <button type="submit" class="dd-item dd-item-danger" role="menuitem" tabindex="-1"><%- icon('logOut', 'icon-sm') %><span>Log out</span></button>
+              </form>
+            </div>
           </li>
         <% } else { %>
-          <li><a class="nav-link" href="/login" <%- isCurrent((p) => p === '/login') %>>Log in</a></li>
-          <li><a class="nav-link" href="/register" <%- isCurrent((p) => p === '/register') %>>Create account</a></li>
+          <li><a class="nav-link" href="/login" <%- isCurrent((p) => p === '/login') %>><%- roll('Log in') %></a></li>
+          <li><a class="nav-link" href="/register" <%- isCurrent((p) => p === '/register') %>><%- roll('Create account') %></a></li>
         <% } %>
-        <li><a class="btn btn-primary btn-sm" href="/items/new"><%- icon('plus', 'icon-sm') %>Report an item</a></li>
+
+        <li>
+          <%# One click swaps light and dark (public/js/theme.js). %>
+          <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to dark theme" title="Switch to dark theme">
+            <%- icon('moon', 'icon-moon') %><%- icon('sun', 'icon-sun') %>
+          </button>
+        </li>
+        <li><a class="btn btn-primary btn-sm" href="/items/new"><%- icon('plus', 'icon-sm icon-plus') %>Report an item</a></li>
       </ul>
     </nav>
   </div>

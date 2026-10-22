@@ -160,6 +160,10 @@
 
   function render(data, params) {
     grid.textContent = '';
+    // Restart the short entrance animation for the new set of cards.
+    grid.classList.remove('results-grid-enter');
+    void grid.offsetWidth;
+    grid.classList.add('results-grid-enter');
     data.items.forEach(function (item) {
       grid.appendChild(buildCard(item));
     });

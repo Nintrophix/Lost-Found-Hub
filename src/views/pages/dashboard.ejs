@@ -2,9 +2,9 @@
   <div class="flex flex-wrap items-end justify-between gap-3">
     <div>
       <h1 class="text-3xl font-extrabold">Hi <%= currentUser.firstName %></h1>
-      <p class="mt-1 text-gray-700">Your listings, claims and conversations in one place.</p>
+      <p class="mt-1 text-muted">Your listings, claims and conversations in one place.</p>
     </div>
-    <a class="btn btn-primary" href="/items/new"><%- icon('plus', 'icon-sm') %>Report an item</a>
+    <a class="btn btn-primary" href="/items/new"><%- icon('plus', 'icon-sm icon-plus') %>Report an item</a>
   </div>
 
   <div class="grid gap-6 lg:grid-cols-2 mt-6">
@@ -20,7 +20,7 @@
           <% }) %>
         </ul>
       <% } else { %>
-        <p class="text-gray-700">No claims are waiting for your review.</p>
+        <p class="text-muted">No claims are waiting for your review.</p>
       <% } %>
     </section>
 
@@ -32,7 +32,7 @@
             <li class="row-item">
               <div class="min-w-0">
                 <a class="font-semibold" href="/items/<%= item._id %>"><%= item.title %></a>
-                <p class="text-sm text-gray-600"><%= item.location %>, <%= fmt.formatDate(item.dateLostOrFound) %></p>
+                <p class="text-sm text-subtle"><%= item.location %>, <%= fmt.formatDate(item.dateLostOrFound) %></p>
               </div>
               <div class="flex items-center gap-2">
                 <span class="badge badge-<%= item.type %>"><%= item.type === 'lost' ? 'Lost' : 'Found' %></span>
@@ -43,7 +43,7 @@
           <% }) %>
         </ul>
       <% } else { %>
-        <p class="text-gray-700">You have not reported anything yet. <a class="prose-link" href="/items/new">Report a lost or found item</a>.</p>
+        <p class="text-muted">You have not reported anything yet. <a class="prose-link" href="/items/new">Report a lost or found item</a>.</p>
       <% } %>
     </section>
 
@@ -63,7 +63,7 @@
           <% }) %>
         </ul>
       <% } else { %>
-        <p class="text-gray-700">No claims yet. If you lost something, <a class="prose-link" href="/items?type=found">check the found items</a>.</p>
+        <p class="text-muted">No claims yet. If you lost something, <a class="prose-link" href="/items?type=found">check the found items</a>.</p>
       <% } %>
     </section>
 
@@ -75,7 +75,7 @@
       <% if (conversations.length) { %>
         <%- include('../partials/conversationList', { conversations, headingTag: 'h3' }) %>
       <% } else { %>
-        <p class="text-gray-700">No conversations yet. They start when you message someone or a claim is approved.</p>
+        <p class="text-muted">No conversations yet. They start when you message someone or a claim is approved.</p>
       <% } %>
     </section>
   </div>

@@ -9,11 +9,11 @@
         <<%= tag %> class="font-semibold">
           <a href="/chat/<%= c.id %>">
             <%= c.otherFirstName %>
-            <span class="font-normal text-gray-600">about</span>
+            <span class="font-normal text-subtle">about</span>
             <%= c.item ? c.item.title : 'a removed listing' %>
           </a>
         </<%= tag %>>
-        <p class="text-sm text-gray-700 truncate">
+        <p class="text-sm text-muted truncate">
           <% if (c.last) { %>
             <%= c.lastIsMine ? 'You: ' : '' %><%= fmt.truncate(c.last.body, 90) %>
           <% } else { %>
@@ -22,7 +22,7 @@
         </p>
       </div>
       <div class="flex items-center gap-3">
-        <span class="text-sm text-gray-600"><%= fmt.formatDateTime(c.lastMessageAt) %></span>
+        <span class="text-sm text-subtle"><%= fmt.formatDateTime(c.lastMessageAt) %></span>
         <% if (c.unread) { %>
           <span class="unread-dot"><%= c.unread %><span class="sr-only"> unread</span></span>
         <% } %>

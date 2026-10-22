@@ -17,9 +17,20 @@
 
   function setUnread(total) {
     if (!badge || typeof total !== 'number' || total < 0) return;
+    // A small bump draws the eye only when the count goes up.
+    if (total > Number(badge.textContent || 0)) {
+      badge.classList.remove('is-bumped');
+      void badge.offsetWidth;
+      badge.classList.add('is-bumped');
+    }
     badge.textContent = String(total);
     badge.hidden = total === 0;
     if (badgeLabel) badgeLabel.textContent = total ? ', ' + total + ' unread' : '';
+    var menuCount = document.getElementById('unread-menu');
+    if (menuCount) {
+      menuCount.textContent = total + ' unread';
+      menuCount.hidden = total === 0;
+    }
   }
 
   function viewingConversation(conversationId) {

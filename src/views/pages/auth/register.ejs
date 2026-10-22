@@ -3,7 +3,7 @@
 %>
 <div class="container-form pt-4 pb-10">
   <h1 class="text-3xl font-extrabold">Create an account</h1>
-  <p class="mt-2 text-gray-700">
+  <p class="mt-2 text-muted">
     Your name and email stay private. Other people only see your first name on listings and in chats.
   </p>
 
@@ -30,7 +30,7 @@
       <%- include('../../partials/fieldError', { f: 'role', errors }) %>
     </fieldset>
     <div class="field">
-      <label class="label" for="campusId">Campus ID number <span class="font-normal text-gray-600">(optional)</span></label>
+      <label class="label" for="campusId">Campus ID number <span class="font-normal text-subtle">(optional)</span></label>
       <input class="input" id="campusId" name="campusId" type="text" maxlength="40" autocomplete="off"
              value="<%= values.campusId || '' %>" aria-describedby="campusId-hint<%= errors.campusId ? ' campusId-error' : '' %>"
              <%- errors.campusId ? 'aria-invalid="true"' : '' %>>
@@ -51,7 +51,7 @@
       <%- include('../../partials/fieldError', { f: 'confirmPassword', errors }) %>
     </div>
     <button class="btn btn-primary w-full" type="submit">Create account</button>
-    <p class="mt-4 text-sm text-gray-700">
+    <p class="mt-4 text-sm text-muted">
       Already registered? <a class="prose-link" href="/login">Log in</a>.
       By creating an account you agree to how we handle data in our <a class="prose-link" href="/privacy">privacy policy</a>.
     </p>
