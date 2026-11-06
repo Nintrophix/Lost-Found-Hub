@@ -34,7 +34,7 @@ created by the seed script. Real listings show the photos people upload.
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22 or newer
 - Postgres 14 or newer: a free [Supabase](https://supabase.com) project, or a local Postgres for development
 
 ## Setup

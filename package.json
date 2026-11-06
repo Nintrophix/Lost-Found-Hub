@@ -6,7 +6,7 @@
   "private": true,
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "nodemon --watch src --watch .env --ext js,ejs,env src/server.js",
