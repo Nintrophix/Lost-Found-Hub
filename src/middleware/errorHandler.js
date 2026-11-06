@@ -24,11 +24,13 @@ function normalize(err) {
   if (err instanceof HttpError) return err;
   if (err && err.type === 'entity.too.large') return new HttpError(413, 'The request body is too large.');
   if (err && err.type === 'entity.parse.failed') return new HttpError(400, 'The request body is not valid JSON.');
-  if (err && err.name === 'CastError') return new HttpError(404, DEFAULT_MESSAGES[404]);
-  if (err && err.name === 'ValidationError' && err.errors) {
-    const details = Object.values(err.errors).map((e) => ({ field: e.path, message: e.message }));
-    return new HttpError(422, DEFAULT_MESSAGES[422], details);
+  // Postgres errors (SQLSTATE codes) that mean bad input rather than a server fault.
+  if (err && err.code === '22P02') return new HttpError(404, DEFAULT_MESSAGES[404]); // malformed id or value
+  if (err && (err.code === '23514' || err.code === '23502' || err.code === '22001')) {
+    return new HttpError(422, DEFAULT_MESSAGES[422]); // check, not-null or length constraint
   }
+  if (err && err.code === '23505') return new HttpError(409, 'That already exists.'); // unique constraint
+  if (err && err.code === '23503') return new HttpError(404, DEFAULT_MESSAGES[404]); // referenced row is gone
   const status = err && Number.isInteger(err.status) && err.status >= 400 && err.status < 600 ? err.status : 500;
   const wrapped = new HttpError(status, status < 500 && err.message ? err.message : DEFAULT_MESSAGES[500]);
   wrapped.original = err;

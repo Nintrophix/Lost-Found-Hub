@@ -7,7 +7,7 @@ const site = require('../config/site');
 const config = require('../config/env');
 const format = require('../utils/format');
 const icons = require('../utils/icons');
-const { asyncHandler } = require('../utils/http');
+const { asyncHandler, isValidId } = require('../utils/http');
 
 /**
  * Loads the logged-in user (if any) and exposes it as res.locals.currentUser.
@@ -20,7 +20,8 @@ const loadUser = asyncHandler(async (req, res, next) => {
   const userId = req.session && req.session.userId;
   if (!userId) return next();
 
-  const user = await User.findById(userId).lean();
+  // A session from before the switch to Postgres may hold an old-style id: treat it as logged out.
+  const user = isValidId(String(userId)) ? await User.findById(userId) : null;
   if (!user) {
     delete req.session.userId;
     return next();

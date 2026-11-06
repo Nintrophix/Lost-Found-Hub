@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Resets the database to a demo state: 3 users, 20 items with images,
+ * Resets the Postgres (Supabase) database to a demo state: 3 users, 20 items with images,
  * claims in every state and a few conversations.
  *
  *   npm run seed            (refuses to run when NODE_ENV=production)
@@ -12,18 +12,15 @@
  */
 const fs = require('fs');
 const path = require('path');
-const mongoose = require('mongoose');
 const sharp = require('sharp');
 
 const config = require('../src/config/env');
-const { connectDB, disconnectDB } = require('../src/config/db');
-const { UPLOAD_DIR } = require('../src/config/multer');
+const { connectDB, disconnectDB, query, one, transaction } = require('../src/config/db');
+const { removeImages } = require('../src/services/storage');
+// Demo images are committed with the code (public/img/seed) so they also exist on hosts like Render.
+const SEED_DIR = path.join(__dirname, '..', 'public', 'img', 'seed');
 const { PATHS } = require('../src/utils/icons');
 const User = require('../src/models/User');
-const Item = require('../src/models/Item');
-const Claim = require('../src/models/Claim');
-const Conversation = require('../src/models/Conversation');
-const Message = require('../src/models/Message');
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -218,31 +215,44 @@ async function renderItemImage(item, variant) {
     '</svg>';
 
   const filename = `seed-${item.ref}-${variant + 1}.webp`;
-  await sharp(Buffer.from(svg)).webp({ quality: 82 }).toFile(path.join(UPLOAD_DIR, filename));
-  return `/uploads/${filename}`;
+  await sharp(Buffer.from(svg)).webp({ quality: 82 }).toFile(path.join(SEED_DIR, filename));
+  return `/img/seed/${filename}`;
 }
 
 function removeOldSeedImages() {
-  fs.readdirSync(UPLOAD_DIR)
+  fs.mkdirSync(SEED_DIR, { recursive: true });
+  fs.readdirSync(SEED_DIR)
     .filter((name) => name.startsWith('seed-'))
-    .forEach((name) => fs.unlinkSync(path.join(UPLOAD_DIR, name)));
+    .forEach((name) => fs.unlinkSync(path.join(SEED_DIR, name)));
 }
 
-async function addMessages(conversation, messages) {
-  let last = conversation.lastMessageAt;
+/** Inserts a conversation's messages in order and moves the thread's last activity to the newest one. */
+async function addMessages(tx, conversation, messages) {
+  let last = null;
   for (const m of messages) {
     const createdAt = new Date(Date.now() - m.minutesAgo * 60 * 1000);
-    await Message.create({
-      conversation: conversation._id,
-      sender: m.from._id,
-      body: m.body,
-      readBy: m.read ? conversation.participants : [m.from._id],
-      createdAt,
-    });
+    await tx.query(
+      'insert into messages (conversation_id, sender_id, body, read_at, created_at) values ($1, $2, $3, $4, $5)',
+      [conversation.id, m.from.id, m.body, m.read ? createdAt : null, createdAt]
+    );
     last = createdAt;
   }
-  conversation.lastMessageAt = last;
-  await conversation.save();
+  if (last) await tx.query('update conversations set last_message_at = $2 where id = $1', [conversation.id, last]);
+}
+
+async function openConversation(tx, itemId, userA, userB) {
+  const [a, b] = [userA.id, userB.id].sort();
+  return tx.one('insert into conversations (item_id, user_a, user_b) values ($1, $2, $3) returning id', [itemId, a, b]);
+}
+
+async function insertClaim(tx, { item, claimant, message, status = 'pending', createdAt = new Date() }) {
+  await tx.query('insert into claims (item_id, claimant_id, message, status, created_at) values ($1, $2, $3, $4, $5)', [
+    item.id,
+    claimant.id,
+    message,
+    status,
+    createdAt,
+  ]);
 }
 
 async function main() {
@@ -252,117 +262,129 @@ async function main() {
   }
 
   await connectDB();
-  console.log('Clearing existing data...');
-  await Promise.all([
-    User.deleteMany({}),
-    Item.deleteMany({}),
-    Claim.deleteMany({}),
-    Conversation.deleteMany({}),
-    Message.deleteMany({}),
-    mongoose.connection.db.collection('sessions').deleteMany({}),
-  ]);
+
+  // Photos people uploaded are deleted along with their listings.
+  const uploaded = (await query('select images from items')).flatMap((row) => row.images);
+
   removeOldSeedImages();
-
-  console.log('Creating users...');
-  const users = {};
-  for (const u of USERS) {
-    users[u.key] = await User.create({
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      campusId: u.campusId,
-      passwordHash: await User.hashPassword(u.password),
-    });
-  }
-
-  console.log('Creating items and images...');
-  const items = {};
+  console.log('Drawing demo images...');
+  const images = {};
   for (const [index, spec] of ITEMS.entries()) {
     // Every item gets one image; every third item also gets a close-up.
-    const images = [await renderItemImage(spec, 0)];
-    if (index % 3 === 0) images.push(await renderItemImage(spec, 1));
-    const posted = daysAgo(spec.posted);
-    items[spec.ref] = await Item.create({
-      type: spec.type,
-      title: spec.title,
-      description: spec.description,
-      category: spec.category,
-      color: spec.color,
-      location: spec.location,
-      dateLostOrFound: daysAgo(spec.days, { midnight: true }),
-      images,
-      status: 'open',
-      reporter: users[spec.reporter]._id,
-      createdAt: posted,
-      updatedAt: posted,
-    });
+    images[spec.ref] = [await renderItemImage(spec, 0)];
+    if (index % 3 === 0) images[spec.ref].push(await renderItemImage(spec, 1));
   }
 
-  console.log('Creating claims and conversations...');
-  const { ava, jordan, sam } = users;
+  const hashes = await Promise.all(USERS.map((u) => User.hashPassword(u.password)));
 
-  // 1. Pending claim waiting for Ava's review.
-  await Claim.create({
-    item: items.charger._id,
-    claimant: sam._id,
-    message: 'That is my charger. It has a small piece of green electrical tape on the cable about 10 cm from the plug, ' +
-      'and I left it in room 104 after the Tuesday 2 pm circuits lab.',
-    createdAt: daysAgo(0.5),
+  // Everything below runs in one transaction: the demo data appears all at once or not at all.
+  await transaction(async (tx) => {
+    console.log('Clearing existing data...');
+    await tx.query('truncate messages, conversations, claims, items, users, user_sessions restart identity cascade');
+
+    console.log('Creating users...');
+    const users = {};
+    for (const [i, u] of USERS.entries()) {
+      users[u.key] = await tx.one(
+        'insert into users (name, email, role, campus_id, password_hash) values ($1, $2, $3, $4, $5) returning id',
+        [u.name, u.email, u.role, u.campusId || null, hashes[i]]
+      );
+    }
+
+    console.log('Creating items...');
+    const items = {};
+    for (const spec of ITEMS) {
+      const posted = daysAgo(spec.posted);
+      items[spec.ref] = await tx.one(
+        `insert into items (type, title, description, category, color, location, date_lost_or_found, images, status,
+                            reporter_id, created_at, updated_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, 'open', $9, $10, $10) returning id`,
+        [
+          spec.type,
+          spec.title,
+          spec.description,
+          spec.category,
+          spec.color,
+          spec.location,
+          daysAgo(spec.days, { midnight: true }).toISOString().slice(0, 10),
+          images[spec.ref],
+          users[spec.reporter].id,
+          posted,
+        ]
+      );
+    }
+
+    console.log('Creating claims and conversations...');
+    const { ava, jordan, sam } = users;
+
+    // 1. Pending claim waiting for Ava's review.
+    await insertClaim(tx, {
+      item: items.charger,
+      claimant: sam,
+      message: 'That is my charger. It has a small piece of green electrical tape on the cable about 10 cm from the plug, ' +
+        'and I left it in room 104 after the Tuesday 2 pm circuits lab.',
+      createdAt: daysAgo(0.5),
+    });
+
+    // 2. Approved claim: item is claimed and the hand-off is being arranged in chat.
+    await insertClaim(tx, {
+      item: items.jacket,
+      claimant: ava,
+      message: 'The jacket has a hair tie in the left pocket and the inside label has a small tear. I sat in row F for BIO 110.',
+      status: 'approved',
+      createdAt: daysAgo(2),
+    });
+    await insertClaim(tx, {
+      item: items.jacket,
+      claimant: sam,
+      message: 'I lost a navy jacket in a lecture hall this week and think it could be this one.',
+      status: 'rejected',
+      createdAt: daysAgo(2.2),
+    });
+    await tx.query("update items set status = 'claimed' where id = $1", [items.jacket.id]);
+    const jacketChat = await openConversation(tx, items.jacket.id, jordan, ava);
+    await addMessages(tx, jacketChat, [
+      { from: jordan, body: 'Hi Ava, your description matches. I work in the Lecture Hall A office.', minutesAgo: 2800, read: true },
+      { from: ava, body: 'Thank you so much! When is a good time to pick it up?', minutesAgo: 2790, read: true },
+      { from: jordan, body: 'I am in the office from 9 to 4 on weekdays. Room A-012, next to the vending machines.', minutesAgo: 2780, read: true },
+      { from: ava, body: 'Perfect, I will come by tomorrow at 10.', minutesAgo: 95, read: false },
+    ]);
+
+    // 3. Resolved: claim approved and the keys were handed back.
+    await insertClaim(tx, {
+      item: items.carabinerKeys,
+      claimant: sam,
+      message: 'Three keys on a green carabiner: the brass one is for a bike lock and one silver key has a blue rubber cap.',
+      status: 'approved',
+      createdAt: daysAgo(10),
+    });
+    await tx.query("update items set status = 'resolved' where id = $1", [items.carabinerKeys.id]);
+    const keysChat = await openConversation(tx, items.carabinerKeys.id, jordan, sam);
+    await addMessages(tx, keysChat, [
+      { from: jordan, body: 'The blue cap detail checks out. I can meet at the Chemistry Building lobby at noon.', minutesAgo: 14000, read: true },
+      { from: sam, body: 'Got them, thanks Jordan!', minutesAgo: 13800, read: true },
+    ]);
+
+    // 4. Someone found Ava's lost backpack and wrote to her.
+    const backpackChat = await openConversation(tx, items.backpack.id, sam, ava);
+    await addMessages(tx, backpackChat, [
+      {
+        from: sam,
+        body: 'I think I found your backpack at the Hamilton Hall bus stop. It has a blue pencil case and a calculus notebook. ' +
+          'I left it with the Hamilton Hall front desk.',
+        minutesAgo: 40,
+        read: false,
+      },
+    ]);
   });
 
-  // 2. Approved claim: item is claimed and the hand-off is being arranged in chat.
-  await Claim.create({
-    item: items.jacket._id,
-    claimant: ava._id,
-    message: 'The jacket has a hair tie in the left pocket and the inside label has a small tear. I sat in row F for BIO 110.',
-    status: 'approved',
-    createdAt: daysAgo(2),
-  });
-  await Claim.create({
-    item: items.jacket._id,
-    claimant: sam._id,
-    message: 'I lost a navy jacket in a lecture hall this week and think it could be this one.',
-    status: 'rejected',
-    createdAt: daysAgo(2.2),
-  });
-  await Item.updateOne({ _id: items.jacket._id }, { status: 'claimed' });
-  const jacketChat = await Conversation.findOrCreate(items.jacket._id, jordan._id, ava._id);
-  await addMessages(jacketChat, [
-    { from: jordan, body: 'Hi Ava, your description matches. I work in the Lecture Hall A office.', minutesAgo: 2800, read: true },
-    { from: ava, body: 'Thank you so much! When is a good time to pick it up?', minutesAgo: 2790, read: true },
-    { from: jordan, body: 'I am in the office from 9 to 4 on weekdays. Room A-012, next to the vending machines.', minutesAgo: 2780, read: true },
-    { from: ava, body: 'Perfect, I will come by tomorrow at 10.', minutesAgo: 95, read: false },
-  ]);
+  await removeImages(uploaded);
 
-  // 3. Resolved: claim approved and the keys were handed back.
-  await Claim.create({
-    item: items.carabinerKeys._id,
-    claimant: sam._id,
-    message: 'Three keys on a green carabiner: the brass one is for a bike lock and one silver key has a blue rubber cap.',
-    status: 'approved',
-    createdAt: daysAgo(10),
-  });
-  await Item.updateOne({ _id: items.carabinerKeys._id }, { status: 'resolved' });
-  const keysChat = await Conversation.findOrCreate(items.carabinerKeys._id, jordan._id, sam._id);
-  await addMessages(keysChat, [
-    { from: jordan, body: 'The blue cap detail checks out. I can meet at the Chemistry Building lobby at noon.', minutesAgo: 14000, read: true },
-    { from: sam, body: 'Got them, thanks Jordan!', minutesAgo: 13800, read: true },
-  ]);
-
-  // 4. Someone found Ava's lost backpack and wrote to her.
-  const backpackChat = await Conversation.findOrCreate(items.backpack._id, sam._id, ava._id);
-  await addMessages(backpackChat, [
-    {
-      from: sam,
-      body: 'I think I found your backpack at the Hamilton Hall bus stop. It has a blue pencil case and a calculus notebook. ' +
-        'I left it with the Hamilton Hall front desk.',
-      minutesAgo: 40,
-      read: false,
-    },
-  ]);
-
-  const counts = await Promise.all([User.countDocuments(), Item.countDocuments(), Claim.countDocuments(), Message.countDocuments()]);
-  console.log(`Done: ${counts[0]} users, ${counts[1]} items, ${counts[2]} claims, ${counts[3]} messages.`);
+  const counts = await one(
+    `select (select count(*) from users)::int as users, (select count(*) from items)::int as items,
+            (select count(*) from claims)::int as claims, (select count(*) from messages)::int as messages`
+  );
+  console.log(`Done: ${counts.users} users, ${counts.items} items, ${counts.claims} claims, ${counts.messages} messages.`);
   console.log('\nDemo accounts:');
   USERS.forEach((u) => console.log(`  ${u.role.padEnd(7)} ${u.email.padEnd(20)} ${u.password}`));
 

@@ -2,7 +2,6 @@
 
 const { validationResult } = require('express-validator');
 const { HttpError, isApiRequest } = require('../utils/http');
-const { removeUploadedFiles } = require('../services/files');
 
 /**
  * Runs express-validator rules, then:
@@ -13,7 +12,7 @@ const { removeUploadedFiles } = require('../services/files');
 function validate(rules) {
   return [
     ...rules,
-    async function handleValidation(req, res, next) {
+    function handleValidation(req, res, next) {
       const result = validationResult(req);
       if (result.isEmpty()) return next();
 
@@ -23,8 +22,7 @@ function validate(rules) {
       }));
 
       if (isApiRequest(req)) {
-        // The request is rejected here, so delete any images Multer already saved for it.
-        await removeUploadedFiles(req.files);
+        // Uploads are only held in memory at this point, so there is nothing to clean up.
         // Bad query parameters are a malformed request; bad body fields are unprocessable.
         const status = req.method === 'GET' ? 400 : 422;
         const message = status === 400 ? 'Some query parameters are invalid.' : 'Some fields are invalid.';

@@ -2,7 +2,7 @@
 
 const Item = require('../models/Item');
 const Claim = require('../models/Claim');
-const Conversation = require('../models/Conversation');
+const { one, transaction } = require('../config/db');
 const { errorMap } = require('../middleware/validate');
 const { userRoom } = require('../services/messaging');
 const { countUnread } = require('../services/unread');
@@ -12,14 +12,14 @@ const { HttpError, isValidId } = require('../utils/http');
 /** Loads an item and checks the viewer may claim it. Returns { item, problem }. */
 async function loadClaimable(itemId, userId) {
   if (!isValidId(itemId)) throw new HttpError(404, 'Item not found.');
-  const item = await Item.findById(itemId).lean();
+  const item = await Item.findById(itemId);
   if (!item) throw new HttpError(404, 'Item not found.');
 
   let problem = null;
   if (item.type !== 'found') problem = 'Only found items can be claimed. For lost items, use "I found this".';
-  else if (String(item.reporter) === String(userId)) problem = 'You reported this item, so you cannot claim it.';
+  else if (String(item.reporterId) === String(userId)) problem = 'You reported this item, so you cannot claim it.';
   else if (item.status !== 'open') problem = 'This item is no longer open for claims.';
-  else if (await Claim.exists({ item: item._id, claimant: userId, status: 'pending' })) {
+  else if (await Claim.hasPending(item._id, userId)) {
     problem = 'You already have a pending claim on this item. The finder will review it soon.';
   }
   return { item, problem };
@@ -73,13 +73,11 @@ exports.create = async (req, res) => {
     return renderClaimForm(res, { item, values, errors: errorMap(req.formErrors), status: 422 });
   }
 
-  try {
-    await Claim.create({ item: item._id, claimant: req.session.userId, message: values.message });
-  } catch (err) {
-    if (err.code !== 11000) throw err;
+  // A double submit hits the one-pending-claim index and simply returns null.
+  const claim = await Claim.create({ itemId: item._id, claimantId: req.session.userId, message: values.message });
+  if (claim) {
+    await notify(req, item.reporterId, null, `New claim on "${truncate(item.title, 50)}". Review it on your dashboard.`);
   }
-
-  await notify(req, item.reporter, null, `New claim on "${truncate(item.title, 50)}". Review it on your dashboard.`);
   req.flash('success', 'Your claim was sent. The finder will compare your details and reply.');
   return res.redirect(`/items/${item._id}`);
 };
@@ -87,15 +85,7 @@ exports.create = async (req, res) => {
 /** Lists claims I made and claims on items I reported. */
 exports.index = async (req, res) => {
   const userId = req.session.userId;
-  const myItemIds = await Item.find({ reporter: userId }).distinct('_id');
-  const [madeByMe, onMyItems] = await Promise.all([
-    Claim.find({ claimant: userId }).sort({ createdAt: -1 }).populate('item', 'title type status').lean(),
-    Claim.find({ item: { $in: myItemIds } })
-      .sort({ createdAt: -1 })
-      .populate('item', 'title type status')
-      .populate('claimant', 'name')
-      .lean(),
-  ]);
+  const [madeByMe, onMyItems] = await Promise.all([Claim.listByClaimant(userId), Claim.listOnItemsOf(userId)]);
 
   res.render('pages/claims/index', {
     title: 'Claims',
@@ -111,8 +101,8 @@ exports.index = async (req, res) => {
 /** Loads a claim whose item the current user reported. */
 async function loadOwnClaim(claimId, userId) {
   if (!isValidId(claimId)) throw new HttpError(404, 'Claim not found.');
-  const claim = await Claim.findById(claimId).populate('item');
-  if (!claim || !claim.item) throw new HttpError(404, 'Claim not found.');
+  const claim = await Claim.findWithItem(claimId);
+  if (!claim) throw new HttpError(404, 'Claim not found.');
   if (String(claim.item.reporter) !== String(userId)) {
     throw new HttpError(403, 'Only the person who reported this item can review its claims.');
   }
@@ -124,8 +114,9 @@ function backTo(req) {
 }
 
 /**
- * Approving a claim marks the item as claimed, rejects the other pending
- * claims and opens a conversation between the reporter and the claimant.
+ * Approving a claim marks the item as claimed, approves this claim, rejects the
+ * other pending claims and opens a conversation between the reporter and the
+ * claimant, all in one transaction so it either fully happens or not at all.
  */
 exports.approve = async (req, res) => {
   const userId = req.session.userId;
@@ -135,28 +126,47 @@ exports.approve = async (req, res) => {
     return res.redirect(backTo(req));
   }
 
-  const item = await Item.findOneAndUpdate(
-    { _id: claim.item._id, status: 'open' },
-    { status: 'claimed' },
-    { new: true }
-  );
-  if (!item) {
-    req.flash('error', 'This item is no longer open, so the claim cannot be approved.');
+  const claimantId = claim.claimant._id;
+  const outcome = await transaction(async (tx) => {
+    // The status guards make concurrent approvals safe: only one can win.
+    const item = await tx.one(
+      "update items set status = 'claimed', updated_at = now() where id = $1 and status = 'open' returning id, title",
+      [claim.item._id]
+    );
+    if (!item) return { error: 'This item is no longer open, so the claim cannot be approved.' };
+    const approved = await tx.one(
+      "update claims set status = 'approved' where id = $1 and status = 'pending' returning id",
+      [claim._id]
+    );
+    if (!approved) throw new HttpError(409, 'This claim was already reviewed.');
+    await tx.query(
+      "update claims set status = 'rejected' where item_id = $1 and id <> $2 and status = 'pending'",
+      [item.id, claim._id]
+    );
+    const [a, b] = [String(userId), String(claimantId)].sort();
+    const conversation = await tx.one(
+      `insert into conversations (item_id, user_a, user_b) values ($1, $2, $3)
+       on conflict on constraint conversations_one_per_pair
+       do update set last_message_at = conversations.last_message_at
+       returning id`,
+      [item.id, a, b]
+    );
+    return { item, conversationId: conversation.id };
+  });
+
+  if (outcome.error) {
+    req.flash('error', outcome.error);
     return res.redirect(backTo(req));
   }
 
-  await Claim.updateOne({ _id: claim._id, status: 'pending' }, { status: 'approved' });
-  await Claim.updateMany({ item: item._id, _id: { $ne: claim._id }, status: 'pending' }, { status: 'rejected' });
-  const conversation = await Conversation.findOrCreate(item._id, userId, claim.claimant);
-
   await notify(
     req,
-    claim.claimant,
-    conversation._id,
-    `Your claim on "${truncate(item.title, 50)}" was approved. Open the chat to arrange the hand-off.`
+    claimantId,
+    outcome.conversationId,
+    `Your claim on "${truncate(outcome.item.title, 50)}" was approved. Open the chat to arrange the hand-off.`
   );
   req.flash('success', 'Claim approved. Use this conversation to agree on a time and place for the hand-off.');
-  return res.redirect(`/chat/${conversation._id}`);
+  return res.redirect(`/chat/${outcome.conversationId}`);
 };
 
 exports.reject = async (req, res) => {
@@ -165,8 +175,8 @@ exports.reject = async (req, res) => {
     req.flash('error', 'This claim was already reviewed.');
     return res.redirect(backTo(req));
   }
-  await Claim.updateOne({ _id: claim._id, status: 'pending' }, { status: 'rejected' });
-  await notify(req, claim.claimant, null, `Your claim on "${truncate(claim.item.title, 50)}" was not approved.`);
+  await one("update claims set status = 'rejected' where id = $1 and status = 'pending' returning id", [claim._id]);
+  await notify(req, claim.claimant._id, null, `Your claim on "${truncate(claim.item.title, 50)}" was not approved.`);
   req.flash('success', 'Claim rejected.');
   return res.redirect(backTo(req));
 };

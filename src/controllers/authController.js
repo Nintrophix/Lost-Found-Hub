@@ -67,7 +67,7 @@ exports.register = async (req, res) => {
   };
   if (req.formErrors) return renderRegister(res, { values, errors: errorMap(req.formErrors), status: 422 });
 
-  if (await User.exists({ email: values.email })) {
+  if (await User.emailExists(values.email)) {
     return renderRegister(res, {
       values,
       errors: { email: 'An account with this email already exists. Try logging in instead.' },
@@ -98,10 +98,10 @@ exports.login = async (req, res) => {
   const values = { email: req.body.email };
   if (req.formErrors) return renderLogin(res, { values, errors: errorMap(req.formErrors), status: 422 });
 
-  const user = await User.findOne({ email: values.email }).select('+passwordHash');
+  const user = await User.findByEmailWithHash(values.email);
   let ok = false;
   if (user) {
-    ok = await user.verifyPassword(req.body.password);
+    ok = await User.verifyPassword(user, req.body.password);
   } else {
     await bcrypt.compare(req.body.password, await dummyHash());
   }

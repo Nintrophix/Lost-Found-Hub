@@ -1,8 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
-const { HttpError } = require('../utils/http');
-const { removeUploadedFiles } = require('../services/files');
+const { HttpError, UUID_PATTERN } = require('../utils/http');
 
 /**
  * Synchronizer-token CSRF protection.
@@ -16,9 +15,9 @@ const { removeUploadedFiles } = require('../services/files');
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const UPLOAD_ROUTES = [
   { method: 'POST', pattern: /^\/items$/ },
-  { method: 'POST', pattern: /^\/items\/[a-f0-9]{24}\/edit$/i },
+  { method: 'POST', pattern: new RegExp(`^/items/${UUID_PATTERN}/edit$`, 'i') },
   { method: 'POST', pattern: /^\/api\/items$/ },
-  { method: 'PATCH', pattern: /^\/api\/items\/[a-f0-9]{24}$/i },
+  { method: 'PATCH', pattern: new RegExp(`^/api/items/${UUID_PATTERN}$`, 'i') },
 ];
 
 function ensureToken(req) {
@@ -69,11 +68,14 @@ function csrfProtection(req, res, next) {
   return next();
 }
 
-/** Runs after Multer on upload routes; removes any written files if the token is wrong. */
-async function verifyCsrfAfterUpload(req, res, next) {
+/**
+ * Runs after Multer on upload routes. Uploads are held in memory until the
+ * request is accepted, so a wrong token leaves nothing behind to clean up.
+ */
+function verifyCsrfAfterUpload(req, res, next) {
   if (!req.csrfDeferred) return next();
   if (tokensMatch(req.session && req.session.csrfToken, providedToken(req))) return next();
-  await removeUploadedFiles(req.files);
+  req.files = [];
   return next(invalidTokenError());
 }
 
