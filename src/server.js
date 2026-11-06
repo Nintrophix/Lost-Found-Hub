@@ -7,6 +7,7 @@ const config = require('./config/env');
 const { connectDB, disconnectDB } = require('./config/db');
 const { createApp } = require('./app');
 const { registerChatHandlers } = require('./sockets/chat');
+const { ensureBucket } = require('./services/storage');
 
 /**
  * Only accept Socket.io connections from our own pages (protects against
@@ -26,6 +27,7 @@ function sameOrigin(req, callback) {
 
 async function start() {
   await connectDB();
+  await ensureBucket();
 
   const { app, sessionMiddleware } = createApp();
   const server = http.createServer(app);

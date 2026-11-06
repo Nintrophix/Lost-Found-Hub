@@ -3,11 +3,10 @@
 const Item = require('../models/Item');
 const User = require('../models/User');
 const Claim = require('../models/Claim');
-const Conversation = require('../models/Conversation');
-const Message = require('../models/Message');
+const { transaction } = require('../config/db');
 const { MAX_IMAGES } = require('../config/multer');
 const { errorMap } = require('../middleware/validate');
-const { removeImages, removeUploadedFiles, publicPathFor } = require('../services/files');
+const { saveImages, removeImages } = require('../services/storage');
 const { parseFilters, searchItems, filtersToQuery, toPublicItem } = require('../services/itemSearch');
 const { absoluteUrl } = require('../config/site');
 const { formatDate, toDateInput, truncate } = require('../utils/format');
@@ -78,31 +77,35 @@ function renderForm(res, { mode, item = null, values, errors = {}, status = 200 
 }
 
 /**
- * Removes an item together with everything that only exists because of it:
- * its image files, claims, conversations and their messages.
+ * Removes an item. Its claims, conversations and messages are deleted by the
+ * database (ON DELETE CASCADE); its photos are removed from storage afterwards.
  */
 async function deleteItemCascade(item) {
-  const conversationIds = await Conversation.find({ item: item._id }).distinct('_id');
-  await Promise.all([
-    Message.deleteMany({ conversation: { $in: conversationIds } }),
-    Conversation.deleteMany({ item: item._id }),
-    Claim.deleteMany({ item: item._id }),
-  ]);
-  await Item.deleteOne({ _id: item._id });
-  await removeImages(item.images);
+  const removed = await Item.remove(item._id);
+  if (removed) await removeImages(removed.images);
 }
 
-/** Applies validated field changes and image additions/removals to an item. */
-function planImageChanges(item, removeRequested, uploadedFiles) {
+/** Works out which existing photos to keep, given the removals asked for and the number of new uploads. */
+function planImageChanges(item, removeRequested, newCount) {
   const removeList = asArray(removeRequested).filter((p) => item.images.includes(p));
   const kept = item.images.filter((p) => !removeList.includes(p));
-  const added = (uploadedFiles || []).map(publicPathFor);
-  return { removeList, images: [...kept, ...added], tooMany: kept.length + added.length > MAX_IMAGES };
+  return { removeList, kept, tooMany: kept.length + newCount > MAX_IMAGES };
+}
+
+/** Saves the new photos, then runs `write(urls)`. If the write fails, the new photos are removed again. */
+async function withSavedImages(files, write) {
+  const urls = await saveImages(files || []);
+  try {
+    return await write(urls);
+  } catch (err) {
+    await removeImages(urls);
+    throw err;
+  }
 }
 
 async function loadItemForView(id) {
   if (!isValidId(id)) throw new HttpError(404, 'Item not found.');
-  const item = await Item.findById(id).populate('reporter', 'name').lean();
+  const item = await Item.findById(id, { withReporter: true });
   if (!item) throw new HttpError(404, 'Item not found.');
   return item;
 }
@@ -148,8 +151,8 @@ exports.show = async (req, res) => {
   const isAdmin = Boolean(viewer && viewer.role === 'admin');
 
   const [myPendingClaim, pendingClaimCount] = await Promise.all([
-    viewer && !isReporter ? Claim.exists({ item: item._id, claimant: viewer.id, status: 'pending' }) : null,
-    isReporter ? Claim.countDocuments({ item: item._id, status: 'pending' }) : 0,
+    viewer && !isReporter ? Claim.hasPending(item._id, viewer.id) : false,
+    isReporter ? Claim.countPending(item._id) : 0,
   ]);
 
   const url = absoluteUrl(req, `/items/${item._id}`);
@@ -158,11 +161,13 @@ exports.show = async (req, res) => {
     `${typeLabel}: ${item.title}. ${item.location}, ${formatDate(item.dateLostOrFound)}. ${item.description}`,
     155
   );
+  // Photos in Supabase Storage already have absolute URLs; local ones are made absolute.
+  const absolute = (p) => (/^https?:\/\//.test(p) ? p : absoluteUrl(req, p));
 
   res.render('pages/items/show', {
     title: `${typeLabel}: ${item.title}`,
     description,
-    ogImage: item.images[0] ? absoluteUrl(req, item.images[0]) : null,
+    ogImage: item.images[0] ? absolute(item.images[0]) : null,
     breadcrumbs: [
       { name: 'Home', url: '/' },
       { name: 'Browse items', url: '/items' },
@@ -190,7 +195,7 @@ exports.show = async (req, res) => {
           name: item.title,
           description: item.description,
           ...(item.color ? { color: item.color } : {}),
-          ...(item.images.length ? { image: item.images.map((p) => absoluteUrl(req, p)) } : {}),
+          ...(item.images.length ? { image: item.images.map(absolute) } : {}),
         },
       },
     ],
@@ -208,21 +213,12 @@ exports.create = async (req, res) => {
   const errors = errorMap(req.formErrors);
   if (req.uploadError) errors.images = req.uploadError;
   if (Object.keys(errors).length) {
-    await removeUploadedFiles(req.files);
     return renderForm(res, { mode: 'new', values, errors, status: req.uploadErrorStatus || 422 });
   }
 
-  let item;
-  try {
-    item = await Item.create({
-      ...itemFieldsFrom(req.body),
-      images: (req.files || []).map(publicPathFor),
-      reporter: req.session.userId,
-    });
-  } catch (err) {
-    await removeUploadedFiles(req.files);
-    throw err;
-  }
+  const item = await withSavedImages(req.files, (images) =>
+    Item.create({ ...itemFieldsFrom(req.body), images }, req.session.userId)
+  );
 
   req.flash('success', 'Your report is published. Claims and messages about it will appear on your dashboard.');
   return res.redirect(`/items/${item._id}`);
@@ -237,23 +233,17 @@ exports.update = async (req, res) => {
   const errors = errorMap(req.formErrors);
   if (req.uploadError) errors.images = req.uploadError;
 
-  const plan = planImageChanges(item, req.body.removeImages, req.files);
+  const plan = planImageChanges(item, req.body.removeImages, (req.files || []).length);
   if (!errors.images && plan.tooMany) {
     errors.images = `An item can have at most ${MAX_IMAGES} images. Remove some before adding more.`;
   }
   if (Object.keys(errors).length) {
-    await removeUploadedFiles(req.files);
     return renderForm(res, { mode: 'edit', item, values, errors, status: req.uploadErrorStatus || 422 });
   }
 
-  Object.assign(item, itemFieldsFrom(req.body));
-  item.images = plan.images;
-  try {
-    await item.save();
-  } catch (err) {
-    await removeUploadedFiles(req.files);
-    throw err;
-  }
+  await withSavedImages(req.files, (added) =>
+    Item.update(item._id, { ...itemFieldsFrom(req.body), images: [...plan.kept, ...added] })
+  );
   await removeImages(plan.removeList);
 
   req.flash('success', 'Your changes are saved.');
@@ -271,9 +261,11 @@ exports.resolve = async (req, res) => {
   if (item.status === 'resolved') {
     req.flash('info', 'This item is already marked as returned.');
   } else {
-    item.status = 'resolved';
-    await item.save();
-    await Claim.updateMany({ item: item._id, status: 'pending' }, { status: 'rejected' });
+    // Both changes land together or not at all.
+    await transaction(async (tx) => {
+      await tx.query("update items set status = 'resolved', updated_at = now() where id = $1", [item._id]);
+      await tx.query("update claims set status = 'rejected' where item_id = $1 and status = 'pending'", [item._id]);
+    });
     req.flash('success', 'Marked as returned. Thanks for closing the loop.');
   }
   return res.redirect(`/items/${item._id}`);
@@ -281,8 +273,7 @@ exports.resolve = async (req, res) => {
 
 exports.reopen = async (req, res) => {
   const item = req.item;
-  item.status = 'open';
-  await item.save();
+  await Item.setStatus(item._id, 'open');
   req.flash('success', 'The listing is open again and visible as open in search.');
   return res.redirect(`/items/${item._id}`);
 };
@@ -305,43 +296,27 @@ exports.apiShow = async (req, res) => {
 };
 
 exports.apiCreate = async (req, res) => {
-  let item;
-  try {
-    item = await Item.create({
-      ...itemFieldsFrom(req.body),
-      images: (req.files || []).map(publicPathFor),
-      reporter: req.session.userId,
-    });
-  } catch (err) {
-    await removeUploadedFiles(req.files);
-    throw err;
-  }
-  await item.populate('reporter', 'name');
-  res.status(201).location(`/api/items/${item._id}`).json({ item: toPublicItem(item.toObject()) });
+  const created = await withSavedImages(req.files, (images) =>
+    Item.create({ ...itemFieldsFrom(req.body), images }, req.session.userId)
+  );
+  const item = await Item.findById(created._id, { withReporter: true });
+  res.status(201).location(`/api/items/${item._id}`).json({ item: toPublicItem(item) });
 };
 
 exports.apiUpdate = async (req, res) => {
   const item = req.item;
-  const plan = planImageChanges(item, req.body.removeImages, req.files);
+  const plan = planImageChanges(item, req.body.removeImages, (req.files || []).length);
   if (plan.tooMany) {
-    await removeUploadedFiles(req.files);
     throw new HttpError(422, `An item can have at most ${MAX_IMAGES} images.`, [
       { field: 'images', message: 'Remove some images before adding more.' },
     ]);
   }
 
-  Object.assign(item, itemFieldsFrom(req.body));
-  if (typeof req.body.status === 'string') item.status = req.body.status;
-  item.images = plan.images;
-  try {
-    await item.save();
-  } catch (err) {
-    await removeUploadedFiles(req.files);
-    throw err;
-  }
+  const fields = itemFieldsFrom(req.body);
+  if (typeof req.body.status === 'string') fields.status = req.body.status;
+  await withSavedImages(req.files, (added) => Item.update(item._id, { ...fields, images: [...plan.kept, ...added] }));
   await removeImages(plan.removeList);
-  await item.populate('reporter', 'name');
-  res.json({ item: toPublicItem(item.toObject()) });
+  res.json({ item: toPublicItem(await Item.findById(item._id, { withReporter: true })) });
 };
 
 exports.apiDestroy = async (req, res) => {

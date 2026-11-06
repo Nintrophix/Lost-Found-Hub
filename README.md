@@ -3,7 +3,7 @@
 A university portal where students and staff report lost or found items, search every listing,
 claim their belongings and arrange the hand-off in a private real-time chat with the finder.
 
-Built with Node.js, Express 4, EJS, MongoDB (Mongoose), Socket.io and Tailwind CSS.
+Built with Node.js, Express 4, EJS, Postgres on Supabase (database and photo storage), Socket.io and Tailwind CSS.
 
 ## Screenshots
 
@@ -22,11 +22,11 @@ created by the seed script. Real listings show the photos people upload.
 
 ## Features
 
-- **Accounts:** register, log in and log out. Sessions are stored in MongoDB, passwords are hashed with bcrypt, and the session ID is regenerated on login.
+- **Accounts:** register, log in and log out. Sessions are stored in Postgres, passwords are hashed with bcrypt, and the session ID is regenerated on login.
 - **Listings:** report a lost or found item with title, description, category, color, location, date and up to 4 photos. Only the reporter (or an admin) can edit or delete. Deleting removes the photos, claims and conversations too.
-- **Uploads:** JPEG, PNG or WebP only, 5 MB each (configurable). The MIME type, the file extension and the file's first bytes are all checked. Files get random UUID names, and anything already written is deleted when a request is rejected. The browser shows previews and warns early.
+- **Uploads:** JPEG, PNG or WebP only, 5 MB each (configurable). The MIME type, the file extension and the file's first bytes are all checked. Files are held in memory until the whole request is valid, then saved under random UUID names to Supabase Storage (or the local `uploads/` folder in development), so a rejected request never leaves files behind. The browser shows previews and warns early.
 - **Search:** full-text search over title, description and location, ranked by relevance, plus filters for type, category, status and date range. Filters live in the URL so results can be shared. The browse page filters live (300 ms debounce) through the JSON API and still works as a normal form without JavaScript.
-- **Claims:** owners claim a found item by describing details only they would know. The finder approves or rejects. Approving marks the item as claimed, rejects the other pending claims and opens a chat. The finder marks the item as returned after the hand-off.
+- **Claims:** owners claim a found item by describing details only they would know. The finder approves or rejects. Approving marks the item as claimed, rejects the other pending claims and opens a chat, in one database transaction. The finder marks the item as returned after the hand-off.
 - **"I found this":** on a lost item, a finder sends the owner a private message that starts a conversation.
 - **Real-time chat:** Socket.io rooms per conversation, typing indicator, read receipts, "load older messages" paging, a live unread badge in the header and pop-up notices for new messages and claim decisions. Messages are saved before they are broadcast. A plain form post works when the live connection is down.
 - **Dashboard:** your listings, claims you made, claims waiting for your review and recent conversations.
@@ -35,7 +35,7 @@ created by the seed script. Real listings show the photos people upload.
 ## Requirements
 
 - Node.js 20 or newer
-- MongoDB 5 or newer (local install, Docker, or a MongoDB Atlas connection string)
+- Postgres 14 or newer: a free [Supabase](https://supabase.com) project, or a local Postgres for development
 
 ## Setup
 
@@ -47,8 +47,14 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` if your MongoDB is not at `mongodb://127.0.0.1:27017`. In development the app falls back to that
-address and a development session secret, so it also starts without a `.env` file.
+Set `DATABASE_URL` in `.env` to your Supabase connection string (see [Setting up Supabase](#setting-up-supabase)),
+or to a local Postgres. In development the app falls back to `postgres://postgres:postgres@127.0.0.1:5432/lostfound`
+and a development session secret. Without `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, uploaded photos are
+saved to the local `uploads/` folder.
+
+```bash
+npm run db:migrate
+```
 
 ```bash
 npm run seed
@@ -80,6 +86,7 @@ To see real-time chat, log in as Ava in one browser and as Jordan in a private w
 | --- | --- |
 | `npm run dev` | Starts the server with nodemon, restarting on changes in `src/` |
 | `npm start` | Starts the server |
+| `npm run db:migrate` | Creates or updates the database tables from `supabase/migrations/` (safe to run any time) |
 | `npm run seed` | Resets the database to the demo data |
 | `node scripts/generate-icons.js` | Rebuilds `public/favicon.ico` and the icons in `public/img/` |
 
@@ -88,7 +95,11 @@ To see real-time chat, log in as Ava in one browser and as Jordan in a private w
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `3000` | HTTP port |
-| `MONGODB_URI` | `mongodb://127.0.0.1:27017/campus-lost-found` (development only) | MongoDB connection string. Required in production |
+| `DATABASE_URL` | `postgres://postgres:postgres@127.0.0.1:5432/lostfound` (development only) | Postgres connection string. For Supabase, use the Session pooler string. Required in production |
+| `DATABASE_POOL_MAX` | `5` | Maximum open database connections. Keep it small on Supabase's free tier |
+| `SUPABASE_URL` | empty | Supabase project URL, for example `https://abcdefghijkl.supabase.co`. With the key below, photos go to Supabase Storage |
+| `SUPABASE_SERVICE_ROLE_KEY` | empty | Supabase service role key. A server-side secret: only ever set it as an environment variable |
+| `SUPABASE_STORAGE_BUCKET` | `item-images` | Public bucket for item photos, created automatically on first start |
 | `SESSION_SECRET` | development-only value | Signs the session cookie. Required in production, at least 32 characters |
 | `NODE_ENV` | `development` | `production` enables secure cookies, HSTS, proxy trust and the canonical-domain redirect |
 | `MAX_UPLOAD_MB` | `5` | Maximum size of each uploaded image |
@@ -101,36 +112,32 @@ Generate a session secret with:
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
+## Setting up Supabase
+
+1. **Project:** create a free project at [supabase.com](https://supabase.com/dashboard). Save the database password you choose.
+2. **Connection string:** open **Connect** (or **Project Settings > Database**), copy the **Session pooler** connection string and replace `[YOUR-PASSWORD]`. It looks like `postgresql://postgres.abcdefghijkl:PASSWORD@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`. The session pooler works over IPv4, which Render and most home networks need; the direct connection is IPv6 only.
+3. **Storage keys:** under **Project Settings > API**, copy the **Project URL** and the **service_role** key. The service role key bypasses all security rules, so keep it out of code, chat and browsers.
+4. **Tables:** from your computer, with those values in `.env`, run `npm run db:migrate`. This creates the tables, indexes and full-text search, and turns on row level security with no policies. That keeps every table out of Supabase's public REST API, so only this server, through its own connection, can read or write data.
+5. **Demo data (optional):** `npm run seed` loads the demo accounts and listings. It deletes everything else in the database first.
+
+The photo bucket (`item-images`, public read) is created by the app the first time it starts. Photos are served from Supabase's CDN with a one-year cache, since every file name is unique.
+
 ## Deploying on Render
 
 The repository includes a Render Blueprint (`render.yaml`) that creates the web service for you.
 
-1. **Database:** create a free cluster on [MongoDB Atlas](https://www.mongodb.com/atlas). Add a database user, and under Network Access allow `0.0.0.0/0` (Render's free services have no fixed IP address). Copy the connection string and add a database name before the `?`, for example `mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/campus-lost-found?retryWrites=true&w=majority`.
-2. **Demo data (optional):** from your computer, run the seed script against Atlas.
+1. **Supabase:** follow [Setting up Supabase](#setting-up-supabase) first.
+2. **Service:** in the [Render dashboard](https://dashboard.render.com) choose **New > Blueprint**, connect this GitHub repository and apply. When asked, paste the Session pooler string as `DATABASE_URL`, and the Project URL and service role key as `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Leave `SITE_URL` empty for now. `SESSION_SECRET` is generated for you.
+3. **Open it:** the site is live at `https://<service-name>.onrender.com` once the first deploy finishes. Every start runs `npm run db:migrate` first, so new migrations apply on deploy.
 
-   PowerShell:
-
-   ```powershell
-   $env:MONGODB_URI="<your Atlas connection string>"; npm run seed
-   ```
-
-   bash:
-
-   ```bash
-   MONGODB_URI="<your Atlas connection string>" npm run seed
-   ```
-
-3. **Service:** in the [Render dashboard](https://dashboard.render.com) choose **New > Blueprint**, connect this GitHub repository and apply. Paste the Atlas string when asked for `MONGODB_URI` and leave `SITE_URL` empty for now. `SESSION_SECRET` is generated for you.
-4. **Open it:** the site is live at `https://<service-name>.onrender.com` once the first deploy finishes.
-
-The Blueprint uses Render's free plan and deploys the `style` branch. On the free plan the service sleeps after 15 minutes without visits (the next visit takes about a minute to wake it), and the disk is temporary: photos people upload are deleted whenever the service restarts or redeploys. Demo images are part of the code and are not affected. For lasting uploads, move to the Starter plan and attach a disk.
+The Blueprint uses Render's free plan and deploys the `style` branch. On the free plan the service sleeps after 15 minutes without visits (the next visit takes about a minute to wake it). Because the database and photos live in Supabase, nothing is lost when the service restarts or redeploys.
 
 To use your own domain, add it under the service's **Settings > Custom Domains**, create the DNS record Render shows you, then set `SITE_URL` to `https://your-domain`.
 
 ## Deploying on a custom domain
 
 1. **DNS:** at your DNS provider, point the domain at your server. Use an `A` record (and `AAAA` for IPv6) to the server's IP, or a `CNAME` to your host's hostname for a subdomain such as `lostandfound.example.edu`.
-2. **Environment:** set `NODE_ENV=production`, `SITE_URL=https://lostandfound.example.edu`, `MONGODB_URI` and `SESSION_SECRET`.
+2. **Environment:** set `NODE_ENV=production`, `SITE_URL=https://lostandfound.example.edu`, `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `SESSION_SECRET`.
 3. **HTTPS and proxy:** run the app behind a reverse proxy that terminates TLS and forwards WebSocket upgrades. The app trusts one proxy hop in production so secure cookies and client IPs work. With Caddy, which gets certificates automatically:
 
    ```
@@ -154,7 +161,7 @@ To use your own domain, add it under the service's **Settings > Custom Domains**
    ```
 
 4. **Redirects:** in production, any request for another hostname (for example `www.` or the raw IP) gets a 301 to `SITE_URL`. `/healthz` is exempt for load balancer checks.
-5. **Uploads:** keep the `uploads/` directory on persistent storage and include it in backups.
+5. **Uploads:** with Supabase Storage configured, photos live in Supabase. Without it, keep the `uploads/` directory on persistent storage and include it in backups.
 6. **Search engines:** submit `https://your-domain/sitemap.xml` in Google Search Console and Bing Webmaster Tools.
 
 ## Project structure
@@ -164,16 +171,17 @@ src/
   app.js              Express app: security headers, static files, sessions, routes
   server.js           HTTP server and Socket.io bootstrap
   config/             env.js, site.js, db.js, session.js, multer.js
-  models/             User, Item, Claim, Conversation, Message
+  models/             User, Item, Claim, Conversation, Message (parameterized SQL, no ORM)
   controllers/        auth, item, claim, chat, page (home, dashboard, privacy, sitemap, robots, llms)
   routes/             auth, items, claims, chat, api, pages
   middleware/         requireAuth, requireOwner, validate, csrf, uploadImages, flash, locals, rateLimits, errorHandler
-  services/           itemSearch, messaging, unread, files
+  services/           itemSearch, messaging, unread, storage (Supabase Storage or local disk)
   sockets/chat.js     All Socket.io event handlers
   views/              layouts/main.ejs, partials/, pages/
 public/               css/app.css, js/ (search, chat, realtime, upload-preview, gallery), img/, favicon.ico
-scripts/              seed.js, generate-icons.js
-uploads/              Uploaded images (not committed)
+scripts/              migrate.js, seed.js, generate-icons.js, generate-topography.js
+supabase/migrations/  SQL schema, applied in order by npm run db:migrate (or the Supabase CLI)
+uploads/              Uploaded images when Supabase Storage is not configured (not committed)
 ```
 
 ## API reference
@@ -225,8 +233,10 @@ for notifications.
 ## Security
 
 - `helmet` with a Content Security Policy that allows only this origin plus the Tailwind stylesheet from jsDelivr (pinned with Subresource Integrity). Inline JSON-LD uses a per-request nonce.
-- CSRF tokens on every state-changing request (form field or `X-CSRF-Token` header). File uploads are checked after the multipart body is parsed, and their files are deleted if the token is wrong.
+- CSRF tokens on every state-changing request (form field or `X-CSRF-Token` header). File uploads are checked after the multipart body is parsed; uploads are still only in memory then, so nothing is stored if the token is wrong.
 - Ownership is always checked against the logged-in session, never against IDs sent by the client.
+- Every query is parameterized. Every table has row level security turned on with no policies, so Supabase's public REST API cannot read or change anything; only the server's own database connection can.
+- The Supabase service role key is used only on the server, for photo storage, and is never sent to browsers.
 - Rate limits on login and registration, the API, and creating listings, claims and messages.
 - Query strings are parsed as plain strings, and every input is validated with `express-validator`.
 - All user content is escaped by EJS (`<%= %>`) on the server and inserted with `textContent` in the browser.
@@ -247,4 +257,5 @@ for notifications.
 ## Notes
 
 - Tailwind is loaded as the precompiled v2.2.19 stylesheet from jsDelivr. The newer browser builds compile CSS in the page and print a production warning in the console, which this build avoids.
+- Database connections go through a small pool (`DATABASE_POOL_MAX`, default 5) with SSL, which suits Supabase's free tier.
 - Rate limit counters and Socket.io rooms are kept in memory, which suits a single server process. To run several instances, add a shared store for `express-rate-limit` and the Socket.io Redis adapter.

@@ -14,7 +14,7 @@ module.exports = asyncHandler(async function requireOwner(req, res, next) {
   const item = await Item.findById(req.params.id);
   if (!item) throw new HttpError(404, 'Item not found.');
 
-  const isReporter = String(item.reporter) === String(req.session.userId);
+  const isReporter = String(item.reporterId) === String(req.session.userId);
   const isAdmin = res.locals.currentUser && res.locals.currentUser.role === 'admin';
   if (!isReporter && !isAdmin) {
     throw new HttpError(403, 'Only the person who reported this item can change it.');
