@@ -16,7 +16,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NODE_VERSION
-        value: "20"
+        value: "22"
       # Supabase "Session pooler" connection string (IPv4), entered in the dashboard (never committed).
       - key: DATABASE_URL
         sync: false
