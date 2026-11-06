@@ -6,7 +6,7 @@ services:
     name: lost-found-hub
     runtime: node
     plan: free
-    branch: style
+    branch: main
     buildCommand: npm ci --omit=dev
     # Applies any new database migrations, then starts the site. Safe to run on every boot.
     startCommand: npm run db:migrate && npm start
