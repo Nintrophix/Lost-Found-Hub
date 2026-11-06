@@ -84,7 +84,7 @@ To see real-time chat, log in as Ava in one browser and as Jordan in a private w
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Starts the server with nodemon, restarting on changes in `src/` |
+| `npm run dev` | Starts the server with nodemon, restarting on changes in `src/` or `.env` |
 | `npm start` | Starts the server |
 | `npm run db:migrate` | Creates or updates the database tables from `supabase/migrations/` (safe to run any time) |
 | `npm run seed` | Resets the database to the demo data |
@@ -130,7 +130,7 @@ The repository includes a Render Blueprint (`render.yaml`) that creates the web 
 2. **Service:** in the [Render dashboard](https://dashboard.render.com) choose **New > Blueprint**, connect this GitHub repository and apply. When asked, paste the Session pooler string as `DATABASE_URL`, and the Project URL and service role key as `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Leave `SITE_URL` empty for now. `SESSION_SECRET` is generated for you.
 3. **Open it:** the site is live at `https://<service-name>.onrender.com` once the first deploy finishes. Every start runs `npm run db:migrate` first, so new migrations apply on deploy.
 
-The Blueprint uses Render's free plan and deploys the `style` branch. On the free plan the service sleeps after 15 minutes without visits (the next visit takes about a minute to wake it). Because the database and photos live in Supabase, nothing is lost when the service restarts or redeploys.
+The Blueprint uses Render's free plan and deploys the `main` branch. On the free plan the service sleeps after 15 minutes without visits (the next visit takes about a minute to wake it). Because the database and photos live in Supabase, nothing is lost when the service restarts or redeploys.
 
 To use your own domain, add it under the service's **Settings > Custom Domains**, create the DNS record Render shows you, then set `SITE_URL` to `https://your-domain`.
 
