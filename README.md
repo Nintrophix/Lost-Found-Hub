@@ -84,7 +84,7 @@ To see real-time chat, log in as Ava in one browser and as Jordan in a private w
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Starts the server with nodemon, restarting on changes in `src/` |
+| `npm run dev` | Starts the server with nodemon, restarting on changes in `src/` or `.env` |
 | `npm start` | Starts the server |
 | `npm run db:migrate` | Creates or updates the database tables from `supabase/migrations/` (safe to run any time) |
 | `npm run seed` | Resets the database to the demo data |
