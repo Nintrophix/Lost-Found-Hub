@@ -10,6 +10,7 @@ const helmet = require('helmet');
 const config = require('./config/env');
 const { createSessionMiddleware } = require('./config/session');
 const { UPLOAD_DIR } = require('./config/multer');
+const { imageOrigin } = require('./services/storage');
 const flash = require('./middleware/flash');
 const { csrfProtection } = require('./middleware/csrf');
 const { loadUser, viewLocals } = require('./middleware/locals');
@@ -70,7 +71,8 @@ function createApp() {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
           styleSrc: ["'self'", 'https://cdn.jsdelivr.net'],
-          imgSrc: ["'self'", 'data:', 'blob:'],
+          // Uploaded photos are served from Supabase Storage when it is configured.
+          imgSrc: ["'self'", 'data:', 'blob:', ...(imageOrigin() ? [imageOrigin()] : [])],
           connectSrc: ["'self'"],
           fontSrc: ["'self'"],
           objectSrc: ["'none'"],

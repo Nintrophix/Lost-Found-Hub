@@ -32,7 +32,7 @@ function allowSend(socket) {
 
 async function isParticipant(conversationId, userId) {
   if (!isValidId(String(conversationId || ''))) return false;
-  return Boolean(await Conversation.exists({ _id: conversationId, participants: userId }));
+  return Boolean(await Conversation.findForUser(conversationId, userId));
 }
 
 /**
@@ -46,7 +46,7 @@ function registerChatHandlers(io) {
     try {
       const session = socket.request.session;
       const userId = session && session.userId;
-      if (!userId || !(await User.exists({ _id: userId }))) return next(new Error('unauthorized'));
+      if (!userId || !isValidId(String(userId)) || !(await User.exists(userId))) return next(new Error('unauthorized'));
       socket.data.userId = String(userId);
       return next();
     } catch (err) {

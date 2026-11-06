@@ -100,7 +100,7 @@ const searchQuery = [
 ];
 
 const messagePage = [
-  query('before').optional().isMongoId().withMessage('before must be a message id.'),
+  query('before').optional().isInt({ min: 1 }).withMessage('before must be a message id.'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit must be between 1 and 100.'),
 ];
 

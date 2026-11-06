@@ -18,18 +18,13 @@ function xml(value) {
 }
 
 exports.home = async (req, res) => {
-  const [recent, lostOpen, foundOpen, returned] = await Promise.all([
-    Item.find({ status: 'open' }).sort({ createdAt: -1 }).limit(8).populate('reporter', 'name').lean(),
-    Item.countDocuments({ type: 'lost', status: 'open' }),
-    Item.countDocuments({ type: 'found', status: 'open' }),
-    Item.countDocuments({ status: 'resolved' }),
-  ]);
+  const [recent, counts] = await Promise.all([Item.recentOpen(8), Item.homeCounts()]);
 
   res.render('pages/home', {
     title: null,
     description: site.SITE_DESCRIPTION,
     recent,
-    counts: { lostOpen, foundOpen, returned },
+    counts,
     jsonLd: [
       {
         '@context': 'https://schema.org',
@@ -54,14 +49,14 @@ exports.privacy = (req, res) => {
       'What Campus Lost & Found Hub collects, why, who can see it, how long it is kept and how to have it removed.',
     breadcrumbs: [{ name: 'Home', url: '/' }, { name: 'Privacy policy' }],
     contactEmail: config.contactEmail,
-    lastUpdated: 'October 22, 2026',
+    lastUpdated: 'November 6, 2026',
     jsonLd: [
       {
         '@context': 'https://schema.org',
         '@type': 'WebPage',
         name: 'Privacy policy',
         url: site.absoluteUrl(req, '/privacy'),
-        dateModified: '2026-10-22',
+        dateModified: '2026-11-06',
       },
     ],
   });
@@ -69,16 +64,10 @@ exports.privacy = (req, res) => {
 
 exports.dashboard = async (req, res) => {
   const userId = req.session.userId;
-  const myItems = await Item.find({ reporter: userId }).sort({ createdAt: -1 }).lean();
-  const myItemIds = myItems.map((i) => i._id);
-
-  const [myClaims, claimsOnMine, conversations] = await Promise.all([
-    Claim.find({ claimant: userId }).sort({ createdAt: -1 }).limit(20).populate('item', 'title type status').lean(),
-    Claim.find({ item: { $in: myItemIds }, status: 'pending' })
-      .sort({ createdAt: 1 })
-      .populate('item', 'title type status')
-      .populate('claimant', 'name')
-      .lean(),
+  const [myItems, myClaims, claimsOnMine, conversations] = await Promise.all([
+    Item.listByReporter(userId),
+    Claim.listByClaimant(userId, 20),
+    Claim.listOnItemsOf(userId, { pendingOnly: true, oldestFirst: true }),
     listConversations(userId, 5),
   ]);
 
@@ -95,12 +84,12 @@ exports.dashboard = async (req, res) => {
 };
 
 exports.sitemap = async (req, res) => {
-  const items = await Item.find({}, { updatedAt: 1 }).sort({ updatedAt: -1 }).limit(45000).lean();
+  const items = (await Item.sitemapEntries(45000)).map((row) => ({ _id: row.id, updatedAt: row.updated_at }));
   const latest = items[0] ? toDateInput(items[0].updatedAt) : toDateInput(new Date());
   const urls = [
     { loc: '/', lastmod: latest, changefreq: 'daily', priority: '1.0' },
     { loc: '/items', lastmod: latest, changefreq: 'hourly', priority: '0.9' },
-    { loc: '/privacy', lastmod: '2026-10-22', changefreq: 'yearly', priority: '0.3' },
+    { loc: '/privacy', lastmod: '2026-11-06', changefreq: 'yearly', priority: '0.3' },
     ...items.map((i) => ({ loc: `/items/${i._id}`, lastmod: toDateInput(i.updatedAt), changefreq: 'weekly', priority: '0.6' })),
   ];
 

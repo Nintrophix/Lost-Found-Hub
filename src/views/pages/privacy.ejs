@@ -14,7 +14,7 @@
       <li><strong>Listings:</strong> the title, description, category, color, location, date and photos you add when you report an item.</li>
       <li><strong>Claims:</strong> the proof-of-ownership details you write when you claim an item.</li>
       <li><strong>Messages:</strong> the text of chats you take part in, when each message was sent and whether it has been read.</li>
-      <li><strong>Session cookie:</strong> one cookie named <code>lf.sid</code> that keeps you logged in. It expires after 7 days without use.</li>
+      <li><strong>Session cookie:</strong> one cookie named <code>lf.sid</code> that keeps you logged in. It expires 7 days after your session last changed (for example, when you logged in).</li>
     </ul>
 
     <h2>What other people can see</h2>
@@ -37,6 +37,11 @@
 
     <h2>Third parties</h2>
     <p>
+      Accounts, listings, claims, messages and login sessions are stored in a database hosted by Supabase, and photos
+      you upload are stored with Supabase Storage, which also delivers them to visitors. The site itself runs on Render.
+      These providers handle the data only to run this service.
+    </p>
+    <p>
       Page styles are loaded from the jsDelivr content delivery network, which receives your IP address and browser
       details when it serves the stylesheet. No other third-party services receive your data.
     </p>
@@ -45,7 +50,7 @@
     <ul>
       <li>Listings, claims and messages are kept until they are deleted.</li>
       <li>When you delete a listing, its photos, its claims and every conversation about it are deleted with it.</li>
-      <li>Login sessions are removed automatically 7 days after they were last used.</li>
+      <li>Login sessions are deleted automatically once they expire, 7 days after they last changed.</li>
     </ul>
 
     <h2>Your choices</h2>

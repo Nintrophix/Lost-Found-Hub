@@ -14,7 +14,7 @@
         <%# Menus follow the dropdown-menu spec in public/js/dropdown.js. Without JavaScript each trigger is a normal link. %>
         <li class="dd" data-dropdown>
           <a class="nav-link dd-trigger" href="/items" data-dropdown-trigger aria-haspopup="menu" aria-expanded="false" aria-controls="menu-browse"
-             <%- isCurrent((p) => p === '/items' || (/^\/items\/[a-f0-9]{24}$/.test(p))) %>>
+             <%- isCurrent((p) => p === '/items' || (/^\/items\/[0-9a-f-]{36}$/i.test(p))) %>>
             <%- roll('Browse items') %><%- icon('chevronDown', 'icon-sm dd-chevron') %>
           </a>
           <div class="dd-content" id="menu-browse" role="menu" aria-label="Browse items" data-align="start" data-state="closed" hidden>
